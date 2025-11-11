@@ -13,6 +13,15 @@ export const PERSONAL_DATA = {
 export const PROJECTS = [
   {
     id: 1,
+    title: "Museiac - Professional Music Platform",
+    description: "Developed the web application for Museiac, a music distribution platform that enables artists to publish and manage unlimited releases across 120+ global streaming services. Responsible for the end-to-end platform development including user onboarding, release workflow, dashboard interface, and responsive UI design.",
+    image: "project-4.png",
+    tags: ["Next.js", "Node.js", "PostgreSQL", "Express.js", "AWS"],
+    liveUrl: "https://www.museiac.com/",
+    githubUrl: "YOUR_GITHUB_URL"
+  }, 
+  {
+    id: 2,
     title: "TFTL Website IIT Patna",
     description: "This is a website of Thermal and Fluid Transport Laboratory (TFTL) of Mechanical Engineering Department of IIT Patna",
     image: "project-1.png",
@@ -21,7 +30,7 @@ export const PROJECTS = [
     githubUrl: "YOUR_GITHUB_URL"
   }, 
   {
-    id: 2,
+    id: 3,
     title: "Realtime Chat Application",
     description: "It is a realtime chat application using socket.io and node.js for anonymous chat",
     image: "project-2.png",
@@ -30,7 +39,7 @@ export const PROJECTS = [
     githubUrl: "YOUR_GITHUB_URL"
   },
   {
-    id: 3,
+    id: 4,
     title: "IIT Patna Website",
     description: "This is a website of Mechanical Engineering Department of IIT Patna",
     image: "project-3.png",
