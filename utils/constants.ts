@@ -15,7 +15,7 @@ export const PROJECTS = [
     id: 1,
     title: "Museiac - Professional Music Platform",
     description: "Developed the web application for Museiac, a music distribution platform that enables artists to publish and manage unlimited releases across 120+ global streaming services. Responsible for the end-to-end platform development including user onboarding, release workflow, dashboard interface, and responsive UI design.",
-    image: "project-4.png",
+    image: "Project-4.png",
     tags: ["Next.js", "Node.js", "PostgreSQL", "Express.js", "AWS"],
     liveUrl: "https://www.museiac.com/",
     githubUrl: "YOUR_GITHUB_URL"
