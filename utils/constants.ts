@@ -16,6 +16,7 @@ export const PROJECTS = [
     title: "Prof. Preetam Kumar",
     description: "Developed the official website for Prof. Preetam Kumar, IIT Patna, with a focus on presenting his academic profile, research contributions, publications, professional achievements, and ongoing projects in a structured and intuitive interface. The website delivers a clean layout, easy navigation, and responsive design, ensuring seamless accessibility across devices. This project reflects my ability to transform complex academic data into an organized digital presence.",
     image: "project-5.png",
+    tags: ["HTML5", "CSS3", "Vanilla JavaScript"],
     liveUrl: "https://iitp.ac.in/~pkumar/",
     githubUrl: "YOUR_GITHUB_URL"
   },
