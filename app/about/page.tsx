@@ -22,6 +22,7 @@ export default function AboutPage() {
     <main className="inner-page">
       <SiteHeader solid />
       <ScrollScene className="about-hero-scene">
+        <div className="about-atmosphere" aria-hidden="true"><i /><i /></div>
         <div className="about-hero-stage">
           <div className="about-portrait-scene">
             <div className="portrait-plane portrait-plane-back" /><div className="portrait-plane portrait-plane-mid" />
@@ -32,6 +33,7 @@ export default function AboutPage() {
             <div className="about-landing-top"><p>About / 001</p><span>Engineer · Researcher · Builder</span></div>
             <h1>Developer<br />by <em>craft.</em><span>Researcher by instinct.</span></h1>
             <div className="about-landing-bottom"><p>I build useful digital products at the intersection of full-stack engineering, distributed systems, and applied intelligence.</p><span>Scroll to explore ↓</span></div>
+            <div className="about-signals" aria-label="Professional highlights"><p><strong>04</strong><span>Engineering<br />disciplines</span></p><p><strong>IIT</strong><span>Research<br />experience</span></p><p><strong>06+</strong><span>Products<br />shipped</span></p></div>
           </div>
         </div>
       </ScrollScene>

@@ -11,6 +11,7 @@ export default async function WorkPage() {
     <main className="inner-page">
       <SiteHeader solid />
       <section className="page-hero">
+        <div className="page-hero-orbit" aria-hidden="true"><i /><i /></div>
         <p className="eyebrow">Selected case studies</p>
         <h1>Work that moves<br /><span className="serif-line">ideas <em>forward.</em></span></h1>
         <p>Digital products spanning full-stack engineering, applied AI, blockchain, and research.</p>
@@ -20,7 +21,7 @@ export default async function WorkPage() {
           <Link href={'/work/' + project.slug} className="work-row" key={project.id}>
             <span>{String(index + 1).padStart(2, '0')}</span>
             <div className="work-thumb">
-              {project.imageUrl ? <Image src={project.imageUrl} alt="" fill sizes="(max-width: 820px) 82vw, 28vw" /> : <span>Image ready<br />for CMS upload</span>}
+              {project.imageUrl ? <Image src={project.imageUrl} alt={project.title} fill sizes="(max-width: 820px) 82vw, 28vw" /> : <span>Image ready<br />for CMS upload</span>}
             </div>
             <div><p>{project.category} · {project.year}</p><h2>{project.title}</h2><p>{project.summary}</p></div>
             <b>↗</b>

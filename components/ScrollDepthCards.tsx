@@ -11,8 +11,9 @@ export default function ScrollDepthCards({ children }: { children: ReactNode }) 
     const update = () => {
       frame = 0;
       const center = window.innerHeight / 2;
-      node.querySelectorAll<HTMLElement>('[data-scroll-card]').forEach((card) => {
-        const bounds = card.getBoundingClientRect();
+      const cards = Array.from(node.querySelectorAll<HTMLElement>('[data-scroll-card]'));
+      const measurements = cards.map((card) => ({ card, bounds: card.getBoundingClientRect() }));
+      measurements.forEach(({ card, bounds }) => {
         const distance = Math.max(-1, Math.min(1, (bounds.top + bounds.height / 2 - center) / window.innerHeight));
         card.style.setProperty('--card-distance', distance.toFixed(4));
         card.style.setProperty('--card-depth', Math.abs(distance).toFixed(4));

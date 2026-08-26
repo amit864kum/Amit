@@ -4,11 +4,12 @@ import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import ScrollScene from '@/components/ScrollScene';
 import MagneticLink from '@/components/MagneticLink';
+import ScrollTicker from '@/components/ScrollTicker';
 
 const projects = [
-  { number: '01', title: 'Sugarcane Supply Chain', type: 'Blockchain / Research', accent: 'from-[#d7a42c] to-[#74500a]' },
-  { number: '02', title: 'PhotoFinder', type: 'AI / Full-stack platform', accent: 'from-[#6d73ff] to-[#292354]' },
-  { number: '03', title: 'FedChain', type: 'Distributed systems / Research', accent: 'from-[#19bca7] to-[#113f50]' },
+  { number: '01', slug: 'sugarcane-supply-chain', title: 'Sugarcane Supply Chain', type: 'Blockchain / Research' },
+  { number: '02', slug: 'photo-finder', title: 'PhotoFinder', type: 'AI / Full-stack platform' },
+  { number: '03', slug: 'fedchain', title: 'FedChain', type: 'Distributed systems / Research' },
 ];
 const services = [
   { number: '01', title: 'Full-Stack Product Development', description: 'I turn product ideas into responsive, scalable web applications—from interface architecture to production-ready APIs.', proof: 'Museiac · PhotoFinder', skills: ['Product UI', 'Backend APIs', 'Databases'] },
@@ -30,6 +31,8 @@ export default function Home() {
       <SiteHeader />
 
       <ScrollScene className="hero home-hero-scene">
+        <div className="hero-atmosphere" aria-hidden="true"><i /><i /><i /></div>
+        <div className="hero-index" aria-hidden="true">AK / 01</div>
         <div className="hero-copy">
           <p className="eyebrow"><span /> Available for select projects</p>
           <h1>I build digital<span className="serif-line">products with <em>purpose.</em></span></h1>
@@ -50,9 +53,13 @@ export default function Home() {
           <div className="portrait-card">
             <Image src="/amit-kumar.jpeg" alt="Amit Kumar in a black suit" fill sizes="(max-width: 800px) 86vw, 36vw" priority />
           </div>
+          <div className="portrait-glass-note"><span>Current focus</span><strong>Building products<br />that earn trust.</strong></div>
+          <div className="portrait-role" aria-hidden="true"><span>Full-stack</span><span>Blockchain</span><span>Applied AI</span></div>
           <div className="experience-badge"><strong>6+</strong><span>Professional<br />builds shipped</span></div>
         </div>
       </ScrollScene>
+
+      <ScrollTicker items={['Full-stack systems', 'Blockchain products', 'Applied AI', 'Product experience', 'Cloud delivery']} />
 
       <section className="what-i-do" aria-labelledby="what-i-do-heading">
         <div className="what-i-do-intro">
@@ -63,7 +70,7 @@ export default function Home() {
         </div>
         <div className="service-grid">
           {services.map((service, index) => (
-            <article className={'service-card ' + (index === 0 ? 'service-card-featured' : '')} key={service.number}>
+            <article className={`service-card service-card-${index + 1} ${index === 0 ? 'service-card-featured' : ''}`} key={service.number}>
               <header><span>{service.number}</span><small>{service.proof}</small></header>
               <h3>{service.title}</h3>
               <p>{service.description}</p>
@@ -109,8 +116,8 @@ export default function Home() {
 
         <div className="project-grid">
           {projects.map((project) => (
-            <Link href="/work" className="project-card" key={project.number}>
-              <div className={`project-visual bg-gradient-to-br ${project.accent}`}>
+            <Link href={`/work/${project.slug}`} className="project-card" key={project.number}>
+              <div className="project-visual">
                 <span className="project-number">{project.number}</span>
                 <span className="project-placeholder">Project imagery<br />managed in CMS</span>
                 <span className="project-arrow">↗</span>

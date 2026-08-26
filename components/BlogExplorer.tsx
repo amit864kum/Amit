@@ -6,7 +6,7 @@ import type { Post } from '@/lib/content';
 import { readingTime } from '@/lib/blog';
 
 function PostVisual({ post, priority = false }: { post: Post; priority?: boolean }) {
-  return <div className="blog-card-visual">{post.imageUrl ? <Image src={post.imageUrl} alt="" fill sizes="(max-width: 800px) 92vw, 50vw" priority={priority} /> : <><span>AK / Journal</span><b>{post.category}</b></>}</div>;
+  return <div className="blog-card-visual">{post.imageUrl ? <Image src={post.imageUrl} alt={post.title} fill sizes="(max-width: 800px) 92vw, 50vw" priority={priority} /> : <><span>AK / Journal</span><b>{post.category}</b></>}</div>;
 }
 
 export default function BlogExplorer({ posts }: { posts: Post[] }) {
@@ -25,7 +25,7 @@ export default function BlogExplorer({ posts }: { posts: Post[] }) {
     <>
       <section className="blog-tools" aria-label="Find articles">
         <label><span>Search the journal</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ideas, systems, or technologies…" /></label>
-        <div className="category-filter" aria-label="Filter by category">{categories.map((item) => <button key={item} type="button" className={category === item ? 'active' : ''} onClick={() => setCategory(item)}>{item}</button>)}</div>
+        <div className="category-filter" aria-label="Filter by category">{categories.map((item) => <button key={item} type="button" className={category === item ? 'active' : ''} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}</div>
         <p>{visible.length} {visible.length === 1 ? 'article' : 'articles'}</p>
       </section>
       {featured && <section className="featured-post">

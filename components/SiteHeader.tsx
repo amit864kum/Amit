@@ -5,9 +5,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
 import ThemeToggle from './ThemeToggle';
-import MagneticLink from './MagneticLink';
 
-const navigation = [{ href: '/work', label: 'Work' }, { href: '/about', label: 'About' }, { href: '/blog', label: 'Journal' }];
+const navigation = [
+  { href: '/', label: 'Home' },
+  { href: '/about', label: 'About' },
+  { href: '/work', label: 'Projects' },
+  { href: '/contact', label: 'Contact' },
+  { href: '/blog', label: 'Blog' },
+];
 
 export default function SiteHeader({ solid = false }: { solid?: boolean }) {
   const pathname = usePathname();
@@ -19,12 +24,13 @@ export default function SiteHeader({ solid = false }: { solid?: boolean }) {
         <span className="brand-copy"><b>Amit Kumar</b><small>Developer · Designer</small></span>
       </Link>
       <nav aria-label="Primary navigation">
-        {navigation.map((item) => { const active = pathname === item.href || pathname.startsWith(item.href + '/'); return <Link href={item.href} key={item.href} className={active ? 'active' : ''}><span>{item.label}</span>{active && <motion.i layoutId="active-navigation" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />}</Link>; })}
+        {navigation.map((item) => {
+          const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href + '/'));
+          return <Link href={item.href} key={item.href} className={active ? 'active' : ''} aria-current={active ? 'page' : undefined}><span>{item.label}</span>{active && <motion.i layoutId="active-navigation" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />}</Link>;
+        })}
       </nav>
       <div className="header-actions">
-        <span className="availability"><i /> Available</span>
         <ThemeToggle />
-        <MagneticLink href="/contact" className="nav-cta">Let&apos;s talk <span>↗</span></MagneticLink>
       </div>
     </motion.header>
   );

@@ -14,5 +14,5 @@ export default function ShareActions({ title }: { title: string }) {
     const target = network === 'linkedin' ? 'https://www.linkedin.com/sharing/share-offsite/?url=' + url : 'https://x.com/intent/post?url=' + url + '&text=' + text;
     open(target, '_blank', 'noopener,noreferrer');
   }
-  return <div className="share-actions"><span>Share</span><button onClick={() => share('linkedin')}>in</button><button onClick={() => share('x')}>X</button><button onClick={copy}>{copied ? '✓' : '⧉'}</button></div>;
+  return <div className="share-actions"><span>Share</span><button onClick={() => share('linkedin')} aria-label="Share on LinkedIn">in</button><button onClick={() => share('x')} aria-label="Share on X">X</button><button onClick={copy}>{copied ? 'Copied' : 'Copy link'}</button></div>;
 }

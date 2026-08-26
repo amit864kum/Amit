@@ -15,7 +15,7 @@ export default function PremiumMotion({ children }: { children: ReactNode }) {
   const glowY = useSpring(cursorY, { stiffness: 70, damping: 24, mass: .35 });
 
   useEffect(() => {
-    const move = (event: PointerEvent) => { cursorX.set(event.clientX - 180); cursorY.set(event.clientY - 180); };
+    const move = (event: PointerEvent) => { cursorX.set(event.clientX - 220); cursorY.set(event.clientY - 220); };
     addEventListener('pointermove', move, { passive: true });
     return () => removeEventListener('pointermove', move);
   }, [cursorX, cursorY]);
@@ -27,6 +27,8 @@ export default function PremiumMotion({ children }: { children: ReactNode }) {
       <div className="ambient-grid" aria-hidden="true" />
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
+          id="main-content"
+          tabIndex={-1}
           className="route-stage"
           key={pathname}
           initial={reduceMotion ? false : { opacity: 0, y: 16, filter: 'blur(8px)' }}
