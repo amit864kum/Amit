@@ -77,12 +77,12 @@ export default function AdminClient({ projects, posts, messages }: { projects: P
     <div className="admin-shell">
       <aside><div className="admin-brand">AK<span>Studio CMS</span></div>
         <button className={tab === 'projects' ? 'active' : ''} onClick={() => setTab('projects')}>Projects <span>{projects.length}</span></button>
-        <button className={tab === 'posts' ? 'active' : ''} onClick={() => setTab('posts')}>Journal <span>{posts.length}</span></button>
+        <button className={tab === 'posts' ? 'active' : ''} onClick={() => setTab('posts')}>Blog <span>{posts.length}</span></button>
         <button className={tab === 'messages' ? 'active' : ''} onClick={() => setTab('messages')}>Enquiries <span>{messages.length}</span></button>
         <div className="admin-aside-actions"><Link href="/">View portfolio ↗</Link><form action="/api/admin/logout" method="post"><button>Log out</button></form></div>
       </aside>
       <section className="admin-content">
-        <header><div><p>Portfolio management</p><h1>{tab === 'projects' ? 'Projects' : tab === 'posts' ? 'Journal posts' : 'Enquiries'}</h1></div><span className="admin-status">{status}</span></header>
+        <header><div><p>Portfolio management</p><h1>{tab === 'projects' ? 'Projects' : tab === 'posts' ? 'Blog posts' : 'Enquiries'}</h1></div><span className="admin-status">{status}</span></header>
         {tab === 'projects' && <div className="admin-grid">
           <div className="admin-list">{projects.map((item) => <article key={item.id}><div><small>{item.category} · {item.year}</small><h3>{item.title}</h3></div><div><button onClick={() => setProject({ ...item, imageUrl: item.imageUrl || '' })}>Edit</button><button onClick={() => remove('projects', item.id)}>Delete</button></div></article>)}</div>
           <form className="admin-form" action={saveProject} key={project.id}><h2>{project.id ? 'Edit project' : 'Add project'}</h2>

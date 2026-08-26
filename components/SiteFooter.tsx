@@ -13,7 +13,7 @@ export default function SiteFooter() {
       <div className="footer-bottom">
         <span>© {new Date().getFullYear()} Amit Kumar · Patna, India</span>
         <div>
-          <Link href="/work">Work</Link><Link href="/about">About</Link><Link href="/blog">Journal</Link>
+          <Link href="/work">Work</Link><Link href="/about">About</Link><Link href="/blog">Blog</Link>
           <a href="https://www.linkedin.com/in/amit864kumar/" target="_blank" rel="noreferrer">LinkedIn</a>
           <a href="https://github.com/amit864kum" target="_blank" rel="noreferrer">GitHub</a>
           <a href="https://www.instagram.com/amit_864kumar" target="_blank" rel="noreferrer">Instagram</a>

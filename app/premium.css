@@ -184,13 +184,15 @@ html[data-theme='light'] .theme-icon-moon::after { background:#eef0f8; }
 }
 .portrait-card {
   inset: 3% 6% 2%;
-  border: 1px solid rgba(255,255,255,.16);
+  border: 1px solid var(--line-strong);
   border-radius: 46% 46% 26px 26px;
-  background: linear-gradient(160deg, rgba(139,124,255,.2), rgba(12,15,27,.9));
+  background: linear-gradient(160deg, color-mix(in srgb,var(--gold) 18%,var(--surface)), var(--paper));
   box-shadow: 0 50px 120px rgba(0,0,0,.42), inset 0 1px rgba(255,255,255,.14);
 }
 .portrait-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(120deg, transparent 50%, rgba(124,111,255,.15)); pointer-events: none; }
-.portrait-card img { filter: saturate(.74) contrast(1.05); }
+.portrait-card img { transition: opacity .42s cubic-bezier(.22,1,.36,1),filter .35s ease; }
+.portrait-card .portrait-image-dark { opacity: 1; filter: saturate(.74) contrast(1.05); }
+.portrait-card .portrait-image-light { opacity: 0; filter: brightness(1.09) contrast(1.18) saturate(.82); mix-blend-mode: multiply; }
 .portrait-orbit { border-color: color-mix(in srgb, var(--gold) 45%, transparent); box-shadow: 0 0 80px color-mix(in srgb, var(--gold) 8%, transparent); }
 .orbit-two { border-color: var(--line); }
 .portrait-glass-note {
@@ -509,8 +511,11 @@ h2 em { color: var(--gold-strong); }
 .site-footer .footer-bottom a:hover { color: #b7abff; }
 
 /* Theme parity */
-html[data-theme='light'] .portrait-card img,
+html[data-theme='light'] .portrait-card .portrait-image-dark { opacity: 0; }
+html[data-theme='light'] .portrait-card .portrait-image-light { opacity: 1; }
 html[data-theme='light'] .about-portrait-scene figure img { filter: saturate(.82) contrast(1.02); }
+html[data-theme='light'] .portrait-card { border-color: rgba(20,25,51,.1); background: linear-gradient(160deg,#ffffff 0%,#f1f3fa 72%,#e7eaf5 100%); box-shadow: 0 38px 100px rgba(37,40,82,.15),inset 0 1px rgba(255,255,255,.92); }
+html[data-theme='light'] .portrait-card::after { background: linear-gradient(120deg,transparent 52%,rgba(81,68,220,.07)); }
 html[data-theme='light'] .portrait-glass-note,
 html[data-theme='light'] .portrait-role span { color:#fff; background:rgba(18,22,43,.68); }
 html[data-theme='light'] .experience-badge { color:#fff; background:rgba(26,30,54,.82); }
