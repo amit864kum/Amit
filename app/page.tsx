@@ -9,11 +9,18 @@ const projects = [
   { number: '03', title: 'FedChain', type: 'Distributed systems / Research', accent: 'from-[#19bca7] to-[#113f50]' },
 ];
 const services = [
-  { number: '01', title: 'Full-Stack Product Development', description: 'Scalable applications built end to end with React, Next.js, Node.js, TypeScript, and PostgreSQL.', proof: 'Museiac · PhotoFinder' },
-  { number: '02', title: 'Blockchain & Smart Contracts', description: 'Permissioned networks, Go chaincode, traceable workflows, and decentralized storage for real operational problems.', proof: 'Supply Chain · Land Registry' },
-  { number: '03', title: 'AI & Distributed Systems', description: 'Privacy-aware intelligent platforms using facial recognition, federated learning, and peer-to-peer systems.', proof: 'PhotoFinder · FedChain' },
-  { number: '04', title: 'Research & Institutional Platforms', description: 'Clear, responsive digital experiences for laboratories, departments, publications, and research infrastructure.', proof: 'IIT Patna · Academic Portals' },
-  { number: '05', title: 'APIs, Cloud & Deployment', description: 'Secure REST APIs, WebSockets, containers, databases, and production delivery across modern cloud platforms.', proof: 'Docker · AWS · Cloudflare' },
+  { number: '01', title: 'Full-Stack Product Development', description: 'I turn product ideas into responsive, scalable web applications—from interface architecture to production-ready APIs.', proof: 'Museiac · PhotoFinder', skills: ['Product UI', 'Backend APIs', 'Databases'] },
+  { number: '02', title: 'Blockchain Systems', description: 'I build permissioned networks, smart-contract workflows, and traceable platforms for real operational challenges.', proof: 'Supply Chain · Land Registry', skills: ['Hyperledger', 'Go chaincode', 'IPFS'] },
+  { number: '03', title: 'AI & Distributed Intelligence', description: 'I develop privacy-aware intelligent systems using computer vision, federated learning, and peer-to-peer coordination.', proof: 'PhotoFinder · FedChain', skills: ['AI vision', 'FedAvg', 'P2P systems'] },
+  { number: '04', title: 'Research Platforms', description: 'I translate complex academic work into clear digital platforms for laboratories, publications, people, and infrastructure.', proof: 'IIT Patna · Research portals', skills: ['Information design', 'Next.js', 'Deployment'] },
+  { number: '05', title: 'Cloud & Production Engineering', description: 'I ship dependable software with secure APIs, real-time communication, containers, and modern cloud infrastructure.', proof: 'Docker · AWS · Cloudflare', skills: ['REST APIs', 'WebSockets', 'CI-ready builds'] },
+];
+const stackGroups = [
+  { label: 'Frontend', number: '01', tools: ['React', 'Next.js', 'TypeScript', 'JavaScript', 'Tailwind CSS'] },
+  { label: 'Backend & Data', number: '02', tools: ['Node.js', 'Express.js', 'REST APIs', 'WebSockets', 'PostgreSQL', 'CouchDB'] },
+  { label: 'Blockchain', number: '03', tools: ['Hyperledger Fabric', 'Go', 'Smart Contracts', 'IPFS'] },
+  { label: 'AI & Research', number: '04', tools: ['Python', 'PyTorch', 'Federated Learning', 'Computer Vision', 'P2P Networking'] },
+  { label: 'Cloud & Tools', number: '05', tools: ['Docker', 'AWS', 'Cloudflare', 'Git', 'GitHub'] },
 ];
 
 export default function Home() {
@@ -46,20 +53,41 @@ export default function Home() {
       </section>
 
       <section className="what-i-do" aria-labelledby="what-i-do-heading">
-        <div className="section-heading">
-          <div><p className="eyebrow">What I do</p><h2 id="what-i-do-heading">Complex systems.<br /><em>Clear outcomes.</em></h2></div>
-          <p>Capabilities grounded in shipped products, research work, and production engineering.</p>
+        <div className="what-i-do-intro">
+          <p className="eyebrow">What I do</p>
+          <h2 id="what-i-do-heading">Ideas in.<br /><em>Impact out.</em></h2>
+          <p>I work at the intersection of product thinking, emerging technology, and reliable engineering.</p>
+          <Link href="/work" className="read-link">See the work behind it ↗</Link>
         </div>
-        <div className="service-list">
-          {services.map((service) => (
-            <article className="service-row" key={service.number}>
-              <span>{service.number}</span>
+        <div className="service-grid">
+          {services.map((service, index) => (
+            <article className={'service-card ' + (index === 0 ? 'service-card-featured' : '')} key={service.number}>
+              <header><span>{service.number}</span><small>{service.proof}</small></header>
               <h3>{service.title}</h3>
               <p>{service.description}</p>
-              <small>{service.proof}</small>
+              <div>{service.skills.map((skill) => <span key={skill}>{skill}</span>)}</div>
             </article>
           ))}
         </div>
+      </section>
+
+      <section className="tech-stack" aria-labelledby="tech-stack-heading">
+        <div className="section-heading">
+          <div><p className="eyebrow">Technology stack</p><h2 id="tech-stack-heading">The tools behind<br /><em>the outcomes.</em></h2></div>
+          <p>A practical stack selected for performance, scalability, security, and maintainability.</p>
+        </div>
+        <div className="stack-layout">
+          <div className="stack-statement" aria-hidden="true"><span>From</span><strong>01</strong><i>idea</i><span>to</span><strong>05</strong><i>production</i></div>
+          <div className="stack-groups">
+            {stackGroups.map((group) => (
+              <article className="stack-group" key={group.label}>
+                <header><span>{group.number}</span><h3>{group.label}</h3></header>
+                <div>{group.tools.map((tool) => <span key={tool}>{tool}</span>)}</div>
+              </article>
+            ))}
+          </div>
+        </div>
+        <p className="stack-footnote"><span /> Continuously learning, deliberately choosing, and shipping with the right technology for each product.</p>
       </section>
 
       <section className="selected-work" aria-labelledby="selected-work-heading">
