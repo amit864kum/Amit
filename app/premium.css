@@ -103,6 +103,9 @@ html[data-theme='light'] .cursor-aurora { mix-blend-mode: multiply; opacity: .55
   border-color: var(--line);
   background: color-mix(in srgb, var(--paper) 38%, transparent);
   padding: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .01em;
 }
 .site-header nav a { min-height: 38px; display: grid; place-items: center; padding: 0 15px; }
 .site-header nav a i { background: color-mix(in srgb, var(--raised) 82%, transparent); box-shadow: inset 0 0 0 1px var(--line), 0 8px 24px var(--shadow); }
@@ -418,7 +421,7 @@ h2 em { color: var(--gold-strong); }
 
 /* Journal index */
 .blog-hero { background: linear-gradient(155deg,color-mix(in srgb,var(--paper) 92%,transparent),color-mix(in srgb,var(--surface) 75%,transparent)); }
-.blog-tools { top: 108px; margin: -35px clamp(16px,3vw,50px) 0; padding: 28px clamp(22px,4vw,54px); border: 1px solid var(--line); border-radius: 24px; background: color-mix(in srgb,var(--glass-strong) 88%,transparent); box-shadow: 0 28px 75px color-mix(in srgb,var(--shadow) 38%,transparent),inset 0 1px rgba(255,255,255,.08); backdrop-filter: blur(24px) saturate(145%); }
+.blog-tools { position: relative; z-index: 3; top: auto; margin: clamp(28px,4vw,54px) clamp(16px,3vw,50px) 0; padding: 28px clamp(22px,4vw,54px); border: 1px solid var(--line); border-radius: 24px; background: color-mix(in srgb,var(--glass-strong) 94%,transparent); box-shadow: 0 22px 60px color-mix(in srgb,var(--shadow) 28%,transparent),inset 0 1px rgba(255,255,255,.08); backdrop-filter: blur(24px) saturate(145%); }
 .blog-tools input { border-color: var(--line); color: var(--ink); }
 .blog-tools input::placeholder { color: color-mix(in srgb,var(--muted) 72%,transparent); }
 .category-filter button { border-color: var(--line); color: var(--muted); background: color-mix(in srgb,var(--surface) 55%,transparent); }
@@ -486,12 +489,18 @@ h2 em { color: var(--gold-strong); }
 .form-success { border:1px solid var(--line); border-radius:30px; background:var(--glass-strong); color:var(--ink); }
 
 /* Footer */
-.site-footer { border-top: 1px solid var(--line); background: linear-gradient(155deg,#080a12,#0b0e1b 62%,#11132a); }
-.site-footer h2 { font-weight: 600; }
+.site-footer { border-top: 1px solid rgba(255,255,255,.12); color: #f7f8ff; background: linear-gradient(155deg,#080a12,#0b0e1b 62%,#11132a); }
+.site-footer .eyebrow { color: #c5cada; }
+.site-footer h2 { color: #f7f8ff; font-weight: 600; }
 .site-footer h2 em { color: #b7abff; font-family: var(--font-display),Georgia,serif; font-style: italic; }
+.site-footer .footer-status { color: #b8bed1; }
+.site-footer .footer-actions > a:last-child { color: #d3d7e5; border-color: rgba(255,255,255,.28); }
+.site-footer .footer-actions > a:last-child:hover { color: #ffffff; border-color: #b7abff; }
 .footer-orbit { border-color: rgba(139,124,255,.24); }
 .footer-orbit span { color: rgba(139,124,255,.08); font-family: var(--font-display),Georgia,serif; }
-.footer-bottom { border-color: rgba(255,255,255,.1); }
+.site-footer .footer-bottom { color: #b8bed1; border-color: rgba(255,255,255,.14); }
+.site-footer .footer-bottom a { color: #e1e4ef; }
+.site-footer .footer-bottom a:hover { color: #b7abff; }
 
 /* Theme parity */
 html[data-theme='light'] .portrait-card img,
@@ -527,7 +536,7 @@ html[data-theme='light'] .case-visual { box-shadow: 0 34px 90px rgba(40,43,93,.2
   .about-hero-stage { padding-top: 100px; }
   .about-signals { margin-bottom: 18px; }
   .contact-layout { grid-template-columns: 1fr; padding-top: 130px; }
-  .blog-tools { position: static; margin: 18px 16px 0; }
+  .blog-tools { position: relative; margin: 24px 16px 0; }
 }
 
 @media (max-width: 600px) {
@@ -567,7 +576,7 @@ html[data-theme='light'] .case-visual { box-shadow: 0 34px 90px rgba(40,43,93,.2
   .brand-copy { display: none; }
   .header-actions { gap: 0; }
   .site-header nav { width: calc(100vw - 24px); justify-content: space-between; }
-  .site-header nav a { flex: 1; padding: 0 6px; font-size: 10px; }
+  .site-header nav a { flex: 1; padding: 0 5px; font-size: 11.5px; }
   .home-hero-scene { min-height: auto; padding: 124px 20px 80px; }
   .hero h1 { font-size: clamp(49px, 15vw, 72px); }
   .hero-actions { align-items: flex-start; flex-direction: column; gap: 20px; }
