@@ -2,7 +2,12 @@ import Image from 'next/image';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 
-const skills = ['React.js', 'Next.js', 'TypeScript', 'Node.js', 'PostgreSQL', 'Hyperledger Fabric', 'Go', 'Docker', 'AWS', 'PyTorch'];
+const disciplines = [
+  { number: '01', title: 'Build', statement: 'Product engineering from interface to database.', tools: ['React', 'Next.js', 'TypeScript', 'Node.js', 'PostgreSQL'] },
+  { number: '02', title: 'Explore', statement: 'Research-led systems that test ambitious ideas.', tools: ['Python', 'PyTorch', 'Federated Learning', 'Computer Vision', 'P2P'] },
+  { number: '03', title: 'Trust', statement: 'Traceable infrastructure for high-stakes workflows.', tools: ['Hyperledger Fabric', 'Go', 'CouchDB', 'IPFS', 'Smart Contracts'] },
+  { number: '04', title: 'Ship', statement: 'Reliable delivery across modern cloud environments.', tools: ['Docker', 'AWS', 'Cloudflare', 'Git', 'GitHub'] },
+];
 export default function AboutPage() {
   return (
     <main className="inner-page">
@@ -19,7 +24,23 @@ export default function AboutPage() {
           <a className="button button-primary" href="/resume-amit-kumar.pdf" download>Download résumé ↓</a>
         </div>
       </section>
-      <section className="skills-section"><p className="eyebrow">Capabilities</p><div>{skills.map((skill) => <span key={skill}>{skill}</span>)}</div></section>
+      <section className="about-toolkit" aria-labelledby="about-toolkit-heading">
+        <div className="about-toolkit-heading">
+          <p className="eyebrow">Technical practice</p>
+          <h2 id="about-toolkit-heading">A toolkit shaped by<br /><em>what the work demands.</em></h2>
+          <p>I move comfortably between product engineering, applied research, distributed trust, and production delivery.</p>
+        </div>
+        <div className="discipline-grid">
+          {disciplines.map((discipline) => (
+            <article className="discipline-card" key={discipline.title}>
+              <header><span>{discipline.number}</span><b>{discipline.title}</b></header>
+              <p>{discipline.statement}</p>
+              <ul>{discipline.tools.map((tool) => <li key={tool}>{tool}</li>)}</ul>
+            </article>
+          ))}
+        </div>
+        <div className="toolkit-marquee" aria-label="Core technologies"><span>Next.js</span><i>◆</i><span>Hyperledger</span><i>◆</i><span>PyTorch</span><i>◆</i><span>Docker</span><i>◆</i><span>PostgreSQL</span></div>
+      </section>
       <section className="timeline">
         <p className="eyebrow">Experience</p>
         {[

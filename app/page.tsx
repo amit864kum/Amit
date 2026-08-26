@@ -15,12 +15,11 @@ const services = [
   { number: '04', title: 'Research Platforms', description: 'I translate complex academic work into clear digital platforms for laboratories, publications, people, and infrastructure.', proof: 'IIT Patna · Research portals', skills: ['Information design', 'Next.js', 'Deployment'] },
   { number: '05', title: 'Cloud & Production Engineering', description: 'I ship dependable software with secure APIs, real-time communication, containers, and modern cloud infrastructure.', proof: 'Docker · AWS · Cloudflare', skills: ['REST APIs', 'WebSockets', 'CI-ready builds'] },
 ];
-const stackGroups = [
-  { label: 'Frontend', number: '01', tools: ['React', 'Next.js', 'TypeScript', 'JavaScript', 'Tailwind CSS'] },
-  { label: 'Backend & Data', number: '02', tools: ['Node.js', 'Express.js', 'REST APIs', 'WebSockets', 'PostgreSQL', 'CouchDB'] },
-  { label: 'Blockchain', number: '03', tools: ['Hyperledger Fabric', 'Go', 'Smart Contracts', 'IPFS'] },
-  { label: 'AI & Research', number: '04', tools: ['Python', 'PyTorch', 'Federated Learning', 'Computer Vision', 'P2P Networking'] },
-  { label: 'Cloud & Tools', number: '05', tools: ['Docker', 'AWS', 'Cloudflare', 'Git', 'GitHub'] },
+const stackLayers = [
+  { label: 'Experience layer', number: '01', description: 'Fast, accessible interfaces shaped around real user journeys.', tools: ['React', 'Next.js', 'TypeScript', 'Tailwind CSS'] },
+  { label: 'Application layer', number: '02', description: 'Typed services, real-time flows, and dependable data foundations.', tools: ['Node.js', 'Express.js', 'REST APIs', 'WebSockets', 'PostgreSQL'] },
+  { label: 'Intelligence & trust', number: '03', description: 'Applied AI and verifiable systems for complex product challenges.', tools: ['Python', 'PyTorch', 'Hyperledger Fabric', 'Go', 'IPFS'] },
+  { label: 'Delivery layer', number: '04', description: 'Portable, observable software ready for production environments.', tools: ['Docker', 'AWS', 'Cloudflare', 'GitHub'] },
 ];
 
 export default function Home() {
@@ -72,22 +71,28 @@ export default function Home() {
       </section>
 
       <section className="tech-stack" aria-labelledby="tech-stack-heading">
-        <div className="section-heading">
-          <div><p className="eyebrow">Technology stack</p><h2 id="tech-stack-heading">The tools behind<br /><em>the outcomes.</em></h2></div>
-          <p>A practical stack selected for performance, scalability, security, and maintainability.</p>
+        <div className="tech-stack-heading">
+          <div><p className="eyebrow">Technology stack</p><h2 id="tech-stack-heading">Built in layers.<br /><em>Shipped as one.</em></h2></div>
+          <div className="stack-principle"><span>Principle 01</span><p>Technology is a means to a clear, dependable product—not the headline.</p></div>
         </div>
-        <div className="stack-layout">
-          <div className="stack-statement" aria-hidden="true"><span>From</span><strong>01</strong><i>idea</i><span>to</span><strong>05</strong><i>production</i></div>
-          <div className="stack-groups">
-            {stackGroups.map((group) => (
-              <article className="stack-group" key={group.label}>
-                <header><span>{group.number}</span><h3>{group.label}</h3></header>
-                <div>{group.tools.map((tool) => <span key={tool}>{tool}</span>)}</div>
+        <div className="stack-architecture">
+          <div className="stack-blueprint" aria-hidden="true">
+            <span>Product architecture</span>
+            <div><i /><i /><i /><i /></div>
+            <strong>Ideas become<br />working systems.</strong>
+            <small>Interface → Infrastructure</small>
+          </div>
+          <div className="stack-layers">
+            {stackLayers.map((layer) => (
+              <article className="stack-layer" key={layer.label}>
+                <span>{layer.number}</span>
+                <div><h3>{layer.label}</h3><p>{layer.description}</p></div>
+                <ul>{layer.tools.map((tool) => <li key={tool}>{tool}</li>)}</ul>
               </article>
             ))}
           </div>
         </div>
-        <p className="stack-footnote"><span /> Continuously learning, deliberately choosing, and shipping with the right technology for each product.</p>
+        <div className="stack-footer"><p><span /> Production-minded by default</p><Link href="/about">Explore my technical background ↗</Link></div>
       </section>
 
       <section className="selected-work" aria-labelledby="selected-work-heading">
