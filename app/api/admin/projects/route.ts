@@ -3,16 +3,22 @@ import { env } from 'cloudflare:workers';
 import { requireAdminApi } from '@/lib/admin';
 import { ensureContentTables } from '@/lib/content';
 
+type ProjectPayload = {
+  id?: number; slug: string; title: string; category: string; summary: string;
+  body: string; tech: string; year: string; imageUrl?: string | null;
+  projectUrl?: string | null; githubUrl?: string | null; featured?: number;
+};
+
 async function authorized() { await ensureContentTables(); return requireAdminApi(); }
 export async function POST(request: Request) {
   if (!await authorized()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const p = await request.json() as Record<string, any>;
+  const p = await request.json() as ProjectPayload;
   await env.DB.prepare('INSERT INTO projects (slug,title,category,summary,body,tech,year,image_url,project_url,github_url,featured) VALUES (?,?,?,?,?,?,?,?,?,?,?)').bind(p.slug,p.title,p.category,p.summary,p.body,p.tech,p.year,p.imageUrl||null,p.projectUrl||null,p.githubUrl||null,p.featured?1:0).run();
   return NextResponse.json({ ok: true });
 }
 export async function PATCH(request: Request) {
   if (!await authorized()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const p = await request.json() as Record<string, any>;
+  const p = await request.json() as ProjectPayload;
   await env.DB.prepare('UPDATE projects SET slug=?,title=?,category=?,summary=?,body=?,tech=?,year=?,image_url=?,project_url=?,github_url=?,featured=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(p.slug,p.title,p.category,p.summary,p.body,p.tech,p.year,p.imageUrl||null,p.projectUrl||null,p.githubUrl||null,p.featured?1:0,p.id).run();
   return NextResponse.json({ ok: true });
 }

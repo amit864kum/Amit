@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
@@ -24,7 +25,7 @@ export default async function ProjectPage({ params }: Props) {
         <p>{project.summary}</p>
       </section>
       <section className="case-visual">
-        {project.imageUrl ? <img src={project.imageUrl} alt={project.title} /> : <span>Project screenshot can be added from the admin dashboard</span>}
+        {project.imageUrl ? <Image src={project.imageUrl} alt={project.title} fill sizes="96vw" priority /> : <span>Project screenshot can be added from the admin dashboard</span>}
       </section>
       <section className="case-body">
         <div><p className="eyebrow">The project</p><h2>Engineering clarity<br /><em>into complexity.</em></h2></div>

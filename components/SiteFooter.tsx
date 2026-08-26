@@ -14,7 +14,6 @@ export default function SiteFooter() {
           <a href="https://www.linkedin.com/in/amit864kumar/" target="_blank" rel="noreferrer">LinkedIn</a>
           <a href="https://github.com/amit864kum" target="_blank" rel="noreferrer">GitHub</a>
           <a href="https://www.instagram.com/amit_864kumar" target="_blank" rel="noreferrer">Instagram</a>
-          <Link href="/admin">Admin</Link>
         </div>
       </div>
     </footer>

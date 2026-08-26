@@ -23,11 +23,17 @@ export const posts = sqliteTable('posts', {
   title: text('title').notNull(),
   excerpt: text('excerpt').notNull(),
   body: text('body').notNull(),
+  category: text('category').notNull().default('Engineering'),
+  imageUrl: text('image_url'),
+  featured: integer('featured').notNull().default(0),
   publishedAt: text('published_at').notNull(),
   published: integer('published').notNull().default(1),
   createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
-}, (table) => [index('idx_posts_published_date').on(table.published, table.publishedAt)]);
+}, (table) => [
+  index('idx_posts_published_date').on(table.published, table.publishedAt),
+  index('idx_posts_category').on(table.category),
+]);
 export const contactMessages = sqliteTable('contact_messages', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),

@@ -8,6 +8,13 @@ const projects = [
   { number: '02', title: 'PhotoFinder', type: 'AI / Full-stack platform', accent: 'from-[#6d73ff] to-[#292354]' },
   { number: '03', title: 'FedChain', type: 'Distributed systems / Research', accent: 'from-[#19bca7] to-[#113f50]' },
 ];
+const services = [
+  { number: '01', title: 'Full-Stack Product Development', description: 'Scalable applications built end to end with React, Next.js, Node.js, TypeScript, and PostgreSQL.', proof: 'Museiac · PhotoFinder' },
+  { number: '02', title: 'Blockchain & Smart Contracts', description: 'Permissioned networks, Go chaincode, traceable workflows, and decentralized storage for real operational problems.', proof: 'Supply Chain · Land Registry' },
+  { number: '03', title: 'AI & Distributed Systems', description: 'Privacy-aware intelligent platforms using facial recognition, federated learning, and peer-to-peer systems.', proof: 'PhotoFinder · FedChain' },
+  { number: '04', title: 'Research & Institutional Platforms', description: 'Clear, responsive digital experiences for laboratories, departments, publications, and research infrastructure.', proof: 'IIT Patna · Academic Portals' },
+  { number: '05', title: 'APIs, Cloud & Deployment', description: 'Secure REST APIs, WebSockets, containers, databases, and production delivery across modern cloud platforms.', proof: 'Docker · AWS · Cloudflare' },
+];
 
 export default function Home() {
   return (
@@ -35,6 +42,23 @@ export default function Home() {
             <Image src="/amit-kumar.jpeg" alt="Amit Kumar in a black suit" fill sizes="(max-width: 800px) 86vw, 36vw" priority />
           </div>
           <div className="experience-badge"><strong>6+</strong><span>Professional<br />builds shipped</span></div>
+        </div>
+      </section>
+
+      <section className="what-i-do" aria-labelledby="what-i-do-heading">
+        <div className="section-heading">
+          <div><p className="eyebrow">What I do</p><h2 id="what-i-do-heading">Complex systems.<br /><em>Clear outcomes.</em></h2></div>
+          <p>Capabilities grounded in shipped products, research work, and production engineering.</p>
+        </div>
+        <div className="service-list">
+          {services.map((service) => (
+            <article className="service-row" key={service.number}>
+              <span>{service.number}</span>
+              <h3>{service.title}</h3>
+              <p>{service.description}</p>
+              <small>{service.proof}</small>
+            </article>
+          ))}
         </div>
       </section>
 

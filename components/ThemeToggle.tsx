@@ -1,18 +1,10 @@
 'use client';
-import { useEffect, useState } from 'react';
 
 export default function ThemeToggle() {
-  const [light, setLight] = useState(false);
-  useEffect(() => {
-    const saved = localStorage.getItem('amit-theme') === 'light';
-    setLight(saved);
-    document.documentElement.dataset.theme = saved ? 'light' : 'dark';
-  }, []);
   function toggle() {
-    const next = !light;
-    setLight(next);
-    document.documentElement.dataset.theme = next ? 'light' : 'dark';
-    localStorage.setItem('amit-theme', next ? 'light' : 'dark');
+    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('amit-theme', next);
   }
-  return <button type="button" className="theme-toggle" onClick={toggle} aria-label={'Use ' + (light ? 'dark' : 'light') + ' theme'}>{light ? '◐' : '◑'}</button>;
+  return <button type="button" className="theme-toggle" onClick={toggle} aria-label="Toggle color theme"><span className="theme-sun" aria-hidden="true">☀</span><span className="theme-moon" aria-hidden="true">☾</span></button>;
 }

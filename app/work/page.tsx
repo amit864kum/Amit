@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import { getProjects } from '@/lib/content';
@@ -19,7 +20,7 @@ export default async function WorkPage() {
           <Link href={'/work/' + project.slug} className="work-row" key={project.id}>
             <span>{String(index + 1).padStart(2, '0')}</span>
             <div className="work-thumb">
-              {project.imageUrl ? <img src={project.imageUrl} alt="" /> : <span>Image ready<br />for CMS upload</span>}
+              {project.imageUrl ? <Image src={project.imageUrl} alt="" fill sizes="(max-width: 820px) 82vw, 28vw" /> : <span>Image ready<br />for CMS upload</span>}
             </div>
             <div><p>{project.category} · {project.year}</p><h2>{project.title}</h2><p>{project.summary}</p></div>
             <b>↗</b>

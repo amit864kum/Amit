@@ -7,6 +7,7 @@ export type Project = {
 };
 export type Post = {
   id: number; slug: string; title: string; excerpt: string; body: string;
+  category: string; imageUrl: string | null; featured: number;
   publishedAt: string; published: number;
 };
 
@@ -19,13 +20,19 @@ const seedProjects = [
   ['museiac', 'Museiac', 'Full-stack music platform', 'A scalable music product with responsive interfaces and optimized backend APIs.', 'Museiac brings product design and engineering together in a performance-focused music platform built with a typed full-stack architecture.', 'Next.js, Node.js, TypeScript, PostgreSQL', '2026', 'https://www.museiac.com/', 0],
 ];
 const seedPosts = [
-  ['designing-trust-in-blockchain-products', 'Designing trust into blockchain products', 'Why good blockchain UX begins with clarity, not technical vocabulary.', 'Trust is not created by putting a ledger behind an interface. It comes from making ownership, status, and consequences legible to the people using the system. In this note, I share the product principles that guide my work on civic and supply-chain applications.', '2026-08-12'],
-  ['research-to-reliable-product', 'From research prototype to reliable product', 'A practical framework for turning experimental systems into software people can use.', 'Research rewards novelty; products demand reliability. Moving between those worlds means protecting the original insight while reducing friction, uncertainty, and operational risk. These are the decisions I use to bridge that gap.', '2026-07-28'],
+  ['designing-trust-in-blockchain-products', 'Designing trust into blockchain products', 'Why good blockchain UX begins with clarity, not technical vocabulary.', '## Trust starts with visibility\nTrust is not created by putting a ledger behind an interface. It comes from making ownership, status, and consequences legible to the people using the system.\n\n## Design the workflow, not the technology\nPeople should understand what happened, who approved it, and what comes next without learning the vocabulary of distributed ledgers. The interface must translate technical guarantees into clear actions.\n\n## Make verification useful\nTraceability matters when it helps someone resolve a real question. Good blockchain products surface proof at the moment it is needed and keep everything else quiet.', 'Blockchain & Product', '2026-08-12', 1],
+  ['research-to-reliable-product', 'From research prototype to reliable product', 'A practical framework for turning experimental systems into software people can use.', '## Protect the original insight\nResearch rewards novelty; products demand reliability. The first step is identifying the idea that must survive the transition.\n\n## Reduce operational uncertainty\nA useful product needs observable states, predictable failure handling, and interfaces that explain what the system is doing.\n\n## Build the feedback loop\nReliable software improves through measurement. Instrument the workflow, learn from real users, and refine without losing the research advantage.', 'Engineering Practice', '2026-07-28', 0],
 ];
 
-let initialized = false;
-export async function ensureContentTables() {
-  if (initialized) return;
+let initialization: Promise<void> | null = null;
+export function ensureContentTables() {
+  if (!initialization) initialization = initializeContentTables().catch((error) => {
+    initialization = null;
+    throw error;
+  });
+  return initialization;
+}
+async function initializeContentTables() {
   const db = env.DB;
   await db.batch([
     db.prepare(`CREATE TABLE IF NOT EXISTS projects (
@@ -37,7 +44,8 @@ export async function ensureContentTables() {
     )`),
     db.prepare(`CREATE TABLE IF NOT EXISTS posts (
       id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL,
-      excerpt TEXT NOT NULL, body TEXT NOT NULL, published_at TEXT NOT NULL,
+      excerpt TEXT NOT NULL, body TEXT NOT NULL, category TEXT NOT NULL DEFAULT 'Engineering',
+      image_url TEXT, featured INTEGER NOT NULL DEFAULT 0, published_at TEXT NOT NULL,
       published INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`),
@@ -50,6 +58,14 @@ export async function ensureContentTables() {
     db.prepare('CREATE INDEX IF NOT EXISTS idx_posts_published_date ON posts(published, published_at)'),
     db.prepare('CREATE INDEX IF NOT EXISTS idx_messages_status_date ON contact_messages(status, created_at)'),
   ]);
+  const postColumnResult = await db.prepare('PRAGMA table_info(posts)').all<{ name: string }>();
+  const postColumns = new Set(postColumnResult.results.map((column) => column.name));
+  const postMigrations: D1PreparedStatement[] = [];
+  if (!postColumns.has('category')) postMigrations.push(db.prepare("ALTER TABLE posts ADD COLUMN category TEXT NOT NULL DEFAULT 'Engineering'"));
+  if (!postColumns.has('image_url')) postMigrations.push(db.prepare('ALTER TABLE posts ADD COLUMN image_url TEXT'));
+  if (!postColumns.has('featured')) postMigrations.push(db.prepare('ALTER TABLE posts ADD COLUMN featured INTEGER NOT NULL DEFAULT 0'));
+  if (postMigrations.length) await db.batch(postMigrations);
+  await db.prepare('CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category)').run();
   const projectCount = await db.prepare('SELECT COUNT(*) AS count FROM projects').first<{ count: number }>();
   if (!projectCount?.count) {
     await db.batch(seedProjects.map((p) => db.prepare(
@@ -59,11 +75,14 @@ export async function ensureContentTables() {
   const postCount = await db.prepare('SELECT COUNT(*) AS count FROM posts').first<{ count: number }>();
   if (!postCount?.count) {
     await db.batch(seedPosts.map((p) => db.prepare(
-      'INSERT INTO posts (slug,title,excerpt,body,published_at,published) VALUES (?,?,?,?,?,1)',
+      'INSERT INTO posts (slug,title,excerpt,body,category,published_at,featured,published) VALUES (?,?,?,?,?,?,?,1)',
     ).bind(...p)));
   }
+  await db.batch([
+    db.prepare("UPDATE posts SET category='Blockchain & Product', featured=1 WHERE slug='designing-trust-in-blockchain-products' AND category='Engineering'"),
+    db.prepare("UPDATE posts SET category='Engineering Practice' WHERE slug='research-to-reliable-product' AND category='Engineering'"),
+  ]);
   await db.prepare('PRAGMA optimize').run();
-  initialized = true;
 }
 
 export async function getProjects(featuredOnly = false): Promise<Project[]> {
@@ -80,9 +99,9 @@ export async function getProject(slug: string): Promise<Project | null> {
 export async function getPosts(includeDrafts = false): Promise<Post[]> {
   await ensureContentTables();
   const where = includeDrafts ? '' : 'WHERE published = 1';
-  return (await env.DB.prepare('SELECT id,slug,title,excerpt,body,published_at AS publishedAt,published FROM posts ' + where + ' ORDER BY published_at DESC,id DESC').all<Post>()).results;
+  return (await env.DB.prepare('SELECT id,slug,title,excerpt,body,category,image_url AS imageUrl,featured,published_at AS publishedAt,published FROM posts ' + where + ' ORDER BY featured DESC,published_at DESC,id DESC').all<Post>()).results;
 }
 export async function getPost(slug: string): Promise<Post | null> {
   await ensureContentTables();
-  return env.DB.prepare('SELECT id,slug,title,excerpt,body,published_at AS publishedAt,published FROM posts WHERE slug = ? AND published = 1').bind(slug).first<Post>();
+  return env.DB.prepare('SELECT id,slug,title,excerpt,body,category,image_url AS imageUrl,featured,published_at AS publishedAt,published FROM posts WHERE slug = ? AND published = 1').bind(slug).first<Post>();
 }

@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
+import BlogExplorer from '@/components/BlogExplorer';
 import { getPosts } from '@/lib/content';
 
 export const dynamic = 'force-dynamic';
@@ -9,10 +9,8 @@ export default async function BlogPage() {
   return (
     <main className="inner-page journal-page">
       <SiteHeader solid />
-      <section className="page-hero"><p className="eyebrow">Notes & ideas</p><h1>What I&apos;m learning,<br /><span className="serif-line">building, and <em>questioning.</em></span></h1></section>
-      <section className="post-list">
-        {posts.map((post) => <Link href={'/blog/' + post.slug} key={post.id} className="post-row"><time>{new Date(post.publishedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</time><div><h2>{post.title}</h2><p>{post.excerpt}</p></div><span>Read ↗</span></Link>)}
-      </section>
+      <section className="page-hero blog-hero"><p className="eyebrow">Amit&apos;s field notes</p><h1>Systems, research,<br /><span className="serif-line">and the craft of <em>building.</em></span></h1><p>Practical essays on engineering reliable products, distributed systems, blockchain, and the decisions behind the work.</p></section>
+      <BlogExplorer posts={posts} />
       <SiteFooter />
     </main>
   );
