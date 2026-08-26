@@ -3,6 +3,7 @@ import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import ScrollScene from '@/components/ScrollScene';
+import MagneticLink from '@/components/MagneticLink';
 
 const projects = [
   { number: '01', title: 'Sugarcane Supply Chain', type: 'Blockchain / Research', accent: 'from-[#d7a42c] to-[#74500a]' },
@@ -37,9 +38,10 @@ export default function Home() {
             high-impact experiences where thoughtful design meets dependable code.
           </p>
           <div className="hero-actions">
-            <Link href="/work" className="button button-primary">Explore my work <span>↗</span></Link>
+            <MagneticLink href="/work" className="button button-primary">Explore my work <span>↗</span></MagneticLink>
             <a href="mailto:amitkumarabhinav59@gmail.com" className="text-link">amitkumarabhinav59@gmail.com</a>
           </div>
+          <div className="hero-proof" aria-label="Professional highlights"><p><strong>06+</strong><span>Products and research<br />platforms shipped</span></p><p><strong>04</strong><span>Engineering<br />disciplines</span></p><p><strong>IIT</strong><span>Patna research<br />experience</span></p></div>
         </div>
 
         <div className="portrait-wrap" aria-label="Portrait of Amit Kumar">

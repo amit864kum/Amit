@@ -1,16 +1,19 @@
 import Link from 'next/link';
+import MagneticLink from './MagneticLink';
 
 export default function SiteFooter() {
   return (
     <footer className="site-footer">
-      <div>
-        <p className="eyebrow">Have a project in mind?</p>
-        <h2>Let&apos;s make something<br /><em>worth remembering.</em></h2>
-        <Link href="/contact" className="button button-primary">Start a conversation <span>↗</span></Link>
+      <div className="footer-orbit" aria-hidden="true"><span>AK</span></div>
+      <div className="footer-cta">
+        <div><p className="eyebrow">Have a serious project in mind?</p><span className="footer-status"><i /> Accepting select collaborations</span></div>
+        <h2>Let&apos;s build something<br /><em>impossible to ignore.</em></h2>
+        <div className="footer-actions"><MagneticLink href="/contact" className="button button-primary">Start a conversation <span>↗</span></MagneticLink><a href="mailto:amitkumarabhinav59@gmail.com">amitkumarabhinav59@gmail.com</a></div>
       </div>
       <div className="footer-bottom">
-        <span>© {new Date().getFullYear()} Amit Kumar</span>
+        <span>© {new Date().getFullYear()} Amit Kumar · Patna, India</span>
         <div>
+          <Link href="/work">Work</Link><Link href="/about">About</Link><Link href="/blog">Journal</Link>
           <a href="https://www.linkedin.com/in/amit864kumar/" target="_blank" rel="noreferrer">LinkedIn</a>
           <a href="https://github.com/amit864kum" target="_blank" rel="noreferrer">GitHub</a>
           <a href="https://www.instagram.com/amit_864kumar" target="_blank" rel="noreferrer">Instagram</a>
