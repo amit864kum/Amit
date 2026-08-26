@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
+import ScrollScene from '@/components/ScrollScene';
 
 const projects = [
   { number: '01', title: 'Sugarcane Supply Chain', type: 'Blockchain / Research', accent: 'from-[#d7a42c] to-[#74500a]' },
@@ -15,12 +16,11 @@ const services = [
   { number: '04', title: 'Research Platforms', description: 'I translate complex academic work into clear digital platforms for laboratories, publications, people, and infrastructure.', proof: 'IIT Patna · Research portals', skills: ['Information design', 'Next.js', 'Deployment'] },
   { number: '05', title: 'Cloud & Production Engineering', description: 'I ship dependable software with secure APIs, real-time communication, containers, and modern cloud infrastructure.', proof: 'Docker · AWS · Cloudflare', skills: ['REST APIs', 'WebSockets', 'CI-ready builds'] },
 ];
-const stackCards = [
-  { mark: 'UI', label: 'Frontend systems', description: 'Responsive, accessible product interfaces with strong component architecture.', tools: ['React', 'Next.js', 'TypeScript', 'Tailwind CSS'], size: 'wide' },
-  { mark: 'API', label: 'Backend & data', description: 'Secure services, real-time communication, and reliable data models.', tools: ['Node.js', 'Express.js', 'WebSockets', 'PostgreSQL'], size: 'standard' },
-  { mark: 'AI', label: 'Applied intelligence', description: 'Research-led machine learning for private, useful experiences.', tools: ['Python', 'PyTorch', 'Computer Vision', 'FedAvg'], size: 'standard' },
-  { mark: 'GO', label: 'Blockchain systems', description: 'Traceable, permissioned workflows for complex real-world operations.', tools: ['Hyperledger Fabric', 'Go', 'CouchDB', 'IPFS'], size: 'standard' },
-  { mark: 'OPS', label: 'Cloud delivery', description: 'Portable builds and dependable production deployment.', tools: ['Docker', 'AWS', 'Cloudflare', 'GitHub'], size: 'wide' },
+const stackLayers = [
+  { label: 'Experience layer', number: '01', description: 'Fast, accessible interfaces shaped around real user journeys.', tools: ['React', 'Next.js', 'TypeScript', 'Tailwind CSS'] },
+  { label: 'Application layer', number: '02', description: 'Typed services, real-time flows, and dependable data foundations.', tools: ['Node.js', 'Express.js', 'REST APIs', 'WebSockets', 'PostgreSQL'] },
+  { label: 'Intelligence & trust', number: '03', description: 'Applied AI and verifiable systems for complex product challenges.', tools: ['Python', 'PyTorch', 'Hyperledger Fabric', 'Go', 'IPFS'] },
+  { label: 'Delivery layer', number: '04', description: 'Portable, observable software ready for production environments.', tools: ['Docker', 'AWS', 'Cloudflare', 'GitHub'] },
 ];
 
 export default function Home() {
@@ -28,7 +28,7 @@ export default function Home() {
     <main>
       <SiteHeader />
 
-      <section className="hero">
+      <ScrollScene className="hero home-hero-scene">
         <div className="hero-copy">
           <p className="eyebrow"><span /> Available for select projects</p>
           <h1>I build digital<span className="serif-line">products with <em>purpose.</em></span></h1>
@@ -50,7 +50,7 @@ export default function Home() {
           </div>
           <div className="experience-badge"><strong>6+</strong><span>Professional<br />builds shipped</span></div>
         </div>
-      </section>
+      </ScrollScene>
 
       <section className="what-i-do" aria-labelledby="what-i-do-heading">
         <div className="what-i-do-intro">
@@ -72,26 +72,28 @@ export default function Home() {
       </section>
 
       <section className="tech-stack" aria-labelledby="tech-stack-heading">
-        <div className="section-heading tech-stack-heading">
-          <div><p className="eyebrow">Technology stack</p><h2 id="tech-stack-heading">Tools I trust.<br /><em>Systems that scale.</em></h2></div>
-          <p>A cross-functional toolkit for taking ambitious products from first commit to production.</p>
+        <div className="tech-stack-heading">
+          <div><p className="eyebrow">Technology stack</p><h2 id="tech-stack-heading">Built in layers.<br /><em>Shipped as one.</em></h2></div>
+          <div className="stack-principle"><span>Principle 01</span><p>Technology is a means to a clear, dependable product—not the headline.</p></div>
         </div>
-        <div className="stack-snapshot" aria-label="Technology overview">
-          <p><strong>05</strong><span>engineering<br />disciplines</span></p>
-          <p><strong>20+</strong><span>production-ready<br />technologies</span></p>
-          <p><strong>01</strong><span>product-minded<br />workflow</span></p>
+        <div className="stack-architecture">
+          <div className="stack-blueprint" aria-hidden="true">
+            <span>Product architecture</span>
+            <div><i /><i /><i /><i /></div>
+            <strong>Ideas become<br />working systems.</strong>
+            <small>Interface → Infrastructure</small>
+          </div>
+          <div className="stack-layers">
+            {stackLayers.map((layer) => (
+              <article className="stack-layer" key={layer.label}>
+                <span>{layer.number}</span>
+                <div><h3>{layer.label}</h3><p>{layer.description}</p></div>
+                <ul>{layer.tools.map((tool) => <li key={tool}>{tool}</li>)}</ul>
+              </article>
+            ))}
+          </div>
         </div>
-        <div className="stack-bento">
-          {stackCards.map((card, index) => (
-            <article className={'stack-card stack-card-' + card.size} key={card.label}>
-              <span className="stack-card-index">0{index + 1}</span>
-              <b className="stack-card-mark" aria-hidden="true">{card.mark}</b>
-              <div><p>{card.label}</p><h3>{card.description}</h3></div>
-              <ul>{card.tools.map((tool) => <li key={tool}>{tool}</li>)}</ul>
-            </article>
-          ))}
-        </div>
-        <div className="stack-footer"><p><span /> Selected for the problem, never for the trend</p><Link href="/about">Explore my technical background ↗</Link></div>
+        <div className="stack-footer"><p><span /> Production-minded by default</p><Link href="/about">Explore my technical background ↗</Link></div>
       </section>
 
       <section className="selected-work" aria-labelledby="selected-work-heading">
