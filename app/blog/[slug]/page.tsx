@@ -7,7 +7,7 @@ import SiteFooter from '@/components/SiteFooter';
 import ReadingProgress from '@/components/ReadingProgress';
 import ShareActions from '@/components/ShareActions';
 import { getPost, getPosts } from '@/lib/content';
-import { articleSections, readingTime } from '@/lib/blog';
+import { articleImage, articleSections, readingTime } from '@/lib/blog';
 
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ slug: string }> };
@@ -44,10 +44,13 @@ export default async function PostPage({ params }: Props) {
           <p className="article-deck">{post.excerpt}</p>
           <div className="article-meta"><Link href="/about" className="author-mini"><Image src="/amit-kumar.jpeg" alt="" width={42} height={42} /><span><b>Amit Kumar</b><small>Author & engineer</small></span></Link><time>{new Date(post.publishedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</time><span>{reading.minutes} min read</span><span>{reading.words} words</span></div>
         </header>
-        <div className="article-cover">{post.imageUrl ? <Image src={post.imageUrl} alt={post.title} fill sizes="(max-width: 1000px) 94vw, 1200px" priority /> : <><span>AK / Field Notes</span><b>{post.category}</b></>}</div>
+        {post.imageUrl ? <div className="article-cover"><Image src={post.imageUrl} alt={post.title} fill sizes="(max-width: 980px) 92vw, 900px" priority /></div> : null}
         <div className="article-layout">
           <aside className="article-sidebar"><p>In this article</p><nav>{sections.map((section) => <a href={'#' + section.id} key={section.id}>{section.heading}</a>)}</nav><ShareActions title={post.title} /></aside>
-          <div className="article-prose">{sections.map((section) => <section id={section.id} key={section.id}><h2>{section.heading}</h2>{section.paragraphs.map((paragraph, paragraphIndex) => <p key={paragraphIndex}>{paragraph}</p>)}</section>)}</div>
+          <div className="article-prose">{sections.map((section) => <section id={section.id} key={section.id}><h2>{section.heading}</h2>{section.paragraphs.map((paragraph, paragraphIndex) => {
+            const image = articleImage(paragraph);
+            return image ? <figure className="article-inline-image" key={paragraphIndex}><div><Image src={image.src} alt={image.alt} fill sizes="(max-width: 820px) 92vw, 760px" loading="lazy" /></div><figcaption>{image.alt}</figcaption></figure> : <p key={paragraphIndex}>{paragraph}</p>;
+          })}</section>)}</div>
         </div>
         <section className="author-card"><Image src="/amit-kumar.jpeg" alt="Amit Kumar" width={110} height={110} /><div><p className="eyebrow">About the author</p><h3>Amit Kumar</h3><p>Full-stack developer and blockchain engineer translating research and complex infrastructure into clear, dependable digital products.</p><Link href="/about">More about Amit ↗</Link></div></section>
         {related.length > 0 && <section className="related-posts"><div className="section-heading"><div><p className="eyebrow">Continue reading</p><h2>Related <em>field notes.</em></h2></div></div><div>{related.map((item) => <Link href={'/blog/' + item.slug} key={item.id}><span>{item.category}</span><h3>{item.title}</h3><p>{item.excerpt}</p><b>Read ↗</b></Link>)}</div></section>}

@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Post, Project } from '@/lib/content';
 
@@ -14,6 +14,8 @@ export default function AdminClient({ projects, posts, messages }: { projects: P
   const [project, setProject] = useState<Project>(emptyProject);
   const [post, setPost] = useState<Post>(emptyPost);
   const [status, setStatus] = useState('');
+  const [inlineUploadBusy, setInlineUploadBusy] = useState(false);
+  const articleBodyRef = useRef<HTMLTextAreaElement>(null);
 
   async function uploadImage(file: File | undefined, currentUrl?: string | null) {
     if (!file || !file.size) return currentUrl || null;
@@ -35,12 +37,35 @@ export default function AdminClient({ projects, posts, messages }: { projects: P
   async function savePost(form: FormData) {
     setStatus('Saving post…');
     try {
-      const imageUrl = await uploadImage(form.get('image') as File, post.imageUrl);
-      const body = Object.fromEntries(form.entries()); delete body.image;
+      const imageUrl = form.get('removeImage') ? null : await uploadImage(form.get('image') as File, post.imageUrl);
+      const body = Object.fromEntries(form.entries()); delete body.image; delete body.removeImage;
       const response = await fetch('/api/admin/posts', { method: post.id ? 'PATCH' : 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, id: post.id, imageUrl, featured: form.get('featured') ? 1 : 0, published: form.get('published') ? 1 : 0 }) });
       if (!response.ok) throw new Error('Save failed');
       setPost(emptyPost); setStatus('Post saved.'); router.refresh();
     } catch { setStatus('Could not save the post.'); }
+  }
+  async function insertArticleImages(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+    const textarea = articleBodyRef.current;
+    if (!files.length || !textarea) return;
+    setInlineUploadBusy(true);
+    setStatus(files.length === 1 ? 'Uploading article image…' : `Uploading ${files.length} article images…`);
+    try {
+      const snippets: string[] = [];
+      for (const file of files) {
+        const url = await uploadImage(file);
+        if (!url) continue;
+        const alt = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').replace(/[\[\]()]/g, '').trim() || 'Article image';
+        snippets.push(`![${alt}](${url})`);
+      }
+      const start = textarea.selectionStart ?? textarea.value.length;
+      const end = textarea.selectionEnd ?? start;
+      textarea.setRangeText(`\n\n${snippets.join('\n\n')}\n\n`, start, end, 'end');
+      textarea.focus();
+      setStatus(`${snippets.length} inline ${snippets.length === 1 ? 'image' : 'images'} inserted. Save the post to publish.`);
+    } catch { setStatus('Could not upload the inline image.'); }
+    finally { setInlineUploadBusy(false); }
   }
   async function remove(kind: 'projects'|'posts', id: number) {
     if (!confirm('Delete this item?')) return;
@@ -79,12 +104,15 @@ export default function AdminClient({ projects, posts, messages }: { projects: P
           <form className="admin-form" action={savePost} key={post.id}><h2>{post.id ? 'Edit post' : 'Add post'}</h2>
             <label>Title<input name="title" required defaultValue={post.title} /></label><label>Slug<input name="slug" required defaultValue={post.slug} pattern="[a-z0-9-]+" /></label>
             <label>Category<input name="category" required defaultValue={post.category} /></label>
-            <label>Excerpt<textarea name="excerpt" required rows={3} defaultValue={post.excerpt} /></label><label>Article<textarea name="body" required rows={10} defaultValue={post.body} /></label>
-            <label>Cover image<input name="image" type="file" accept="image/png,image/jpeg,image/webp" /></label>
+            <label>Excerpt<textarea name="excerpt" required rows={3} defaultValue={post.excerpt} /></label>
+            <label>Article<textarea ref={articleBodyRef} name="body" required rows={14} defaultValue={post.body} /><small>Use “## Heading” for sections. Place the cursor where an image should appear, then upload it below.</small></label>
+            <div className="admin-inline-media" aria-busy={inlineUploadBusy}><label>Inline article images (optional)<input type="file" accept="image/png,image/jpeg,image/webp" multiple disabled={inlineUploadBusy} onChange={insertArticleImages} /></label><p>Uploaded images are inserted at the cursor. Edit the text in square brackets to change the caption.</p></div>
+            <label>Cover image (optional)<input name="image" type="file" accept="image/png,image/jpeg,image/webp" /></label>
+            {post.imageUrl ? <label className="check"><input name="removeImage" type="checkbox" /> Remove current cover image</label> : null}
             <label>Publish date<input name="publishedAt" type="date" required defaultValue={post.publishedAt} /></label>
             <label className="check"><input name="featured" type="checkbox" defaultChecked={Boolean(post.featured)} /> Featured article</label>
             <label className="check"><input name="published" type="checkbox" defaultChecked={Boolean(post.published)} /> Published</label>
-            <div className="admin-form-actions"><button className="admin-primary">Save post</button>{post.id ? <button type="button" onClick={() => setPost(emptyPost)}>Cancel</button> : null}</div>
+            <div className="admin-form-actions"><button className="admin-primary" disabled={inlineUploadBusy}>Save post</button>{post.id ? <button type="button" onClick={() => setPost(emptyPost)}>Cancel</button> : null}</div>
           </form>
         </div>}
         {tab === 'messages' && <div className="message-list">{messages.length ? messages.map((item) => <article key={item.id}><header><div><h3>{item.name}</h3><a href={'mailto:' + item.email}>{item.email}</a></div><time>{new Date(item.createdAt).toLocaleString('en-IN')}</time></header><p><strong>{item.service}</strong>{item.budget ? ' · ' + item.budget : ''}</p><p>{item.message}</p></article>) : <p>No enquiries yet.</p>}</div>}

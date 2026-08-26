@@ -5,6 +5,13 @@ export function readingTime(body: string) {
 export function headingId(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
 }
+export function articleImage(value: string) {
+  const match = value.trim().match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+  if (!match) return null;
+  const src = match[2].trim();
+  if (!src.startsWith('/api/media/')) return null;
+  return { src, alt: match[1].trim() || 'Article image' };
+}
 export function articleSections(body: string) {
   const sections: Array<{ heading: string; id: string; paragraphs: string[] }> = [];
   let current = { heading: 'The note', id: 'the-note', paragraphs: [] as string[] };
