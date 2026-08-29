@@ -51,8 +51,7 @@ export default function Home() {
           <div className="portrait-orbit orbit-one" />
           <div className="portrait-orbit orbit-two" />
           <div className="portrait-card">
-            <Image className="portrait-image-dark" src="/amit-kumar.jpeg" alt="Amit Kumar in a black suit" fill sizes="(max-width: 800px) 86vw, 36vw" priority />
-            <Image className="portrait-image-light" src="/amit-kumar-light.png" alt="" fill sizes="(max-width: 800px) 86vw, 36vw" priority />
+            <Image src="/amit-kumar.jpeg" alt="Amit Kumar in a black suit" fill sizes="(max-width: 800px) 86vw, 36vw" priority />
           </div>
           <div className="portrait-glass-note"><span>Current focus</span><strong>Building products<br />that earn trust.</strong></div>
           <div className="portrait-role" aria-hidden="true"><span>Full-stack</span><span>Blockchain</span><span>Applied AI</span></div>

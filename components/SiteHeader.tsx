@@ -21,7 +21,6 @@ export default function SiteHeader({ solid = false }: { solid?: boolean }) {
     <motion.header className={'site-header ' + (solid ? 'header-solid' : '')} initial={reduceMotion ? false : { y: -40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: .7, ease: [0.22, 1, 0.36, 1] }}>
       <Link href="/" className="brand" aria-label="Amit Kumar home">
         <span className="brand-mark"><Image src="/ak-mark.png" alt="" width={44} height={44} priority /></span>
-        <span className="brand-copy"><b>Amit Kumar</b><small>Developer · Designer</small></span>
       </Link>
       <nav aria-label="Primary navigation">
         {navigation.map((item) => {
