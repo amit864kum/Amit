@@ -1,4 +1,5 @@
 'use client';
+import { Moon, Sun } from 'lucide-react';
 import { useSyncExternalStore } from 'react';
 
 type Theme = 'light' | 'dark';
@@ -24,10 +25,10 @@ export default function ThemeToggle() {
 
   const nextTheme = theme === 'light' ? 'dark' : 'light';
   return (
-    <button type="button" className="theme-toggle" onClick={toggle} aria-label={`Switch to ${nextTheme} mode`} aria-pressed={theme === 'light'} title={`Switch to ${nextTheme} mode`}>
-      <span className="theme-toggle-thumb" aria-hidden="true" />
-      <span className="theme-toggle-option theme-toggle-light" aria-hidden="true"><i /><b>Light</b></span>
-      <span className="theme-toggle-option theme-toggle-dark" aria-hidden="true"><i /><b>Dark</b></span>
+    <button type="button" className="theme-toggle" onClick={toggle} aria-label={`Switch to ${nextTheme} mode`} aria-pressed={theme === 'dark'} title={`Switch to ${nextTheme} mode`}>
+      {theme === 'light'
+        ? <Moon className="theme-toggle-icon" aria-hidden="true" strokeWidth={1.8} />
+        : <Sun className="theme-toggle-icon" aria-hidden="true" strokeWidth={1.8} />}
     </button>
   );
 }

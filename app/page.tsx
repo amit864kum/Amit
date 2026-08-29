@@ -32,9 +32,7 @@ export default function Home() {
 
       <ScrollScene className="hero home-hero-scene">
         <div className="hero-atmosphere" aria-hidden="true"><i /><i /><i /></div>
-        <div className="hero-index" aria-hidden="true">AK / 01</div>
         <div className="hero-copy">
-          <p className="eyebrow"><span /> Available for select projects</p>
           <h1>I build digital<span className="serif-line">products with <em>purpose.</em></span></h1>
           <p className="intro">
             Full-stack developer and blockchain engineer crafting scalable,
