@@ -87,6 +87,7 @@ function StackToolIcon({ tool }: { tool: StackTool }) {
       aria-hidden="true"
       viewBox="0 0 24 24"
       fill="currentColor"
+      data-brand={tool.name}
       style={{ color: `#${tool.icon.hex}` }}
     >
       <path d={tool.icon.path} />
