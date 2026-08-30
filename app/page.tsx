@@ -15,7 +15,7 @@ const projects = [
 ];
 const services = [
   { title: 'Full-Stack Product Development', description: 'I turn product ideas into scalable web applications—from interface architecture to production-ready APIs.', skills: ['Product UI', 'Backend APIs', 'Databases'], icon: Box },
-  { title: 'Blockchain Systems', description: 'I build permissioned networks, smart-contract workflows, and traceable platforms for real operational challenges.', skills: ['Hyperledger', 'Go chaincode', 'IPFS'], icon: Network },
+  { title: 'Blockchain Systems', description: 'I build permissioned networks, smart-contract workflows, and traceable platforms for real operational challenges.', skills: ['Hyperledger Fabric', 'Go chaincode', 'IPFS'], icon: Network },
   { title: 'AI & Distributed Intelligence', description: 'I develop privacy-aware intelligent systems using computer vision, federated learning, and peer-to-peer coordination.', skills: ['AI vision', 'FedAvg', 'P2P systems'], icon: BrainCircuit },
   { title: 'Research Platforms', description: 'I translate academic work into usable platforms, demos, and research-oriented products.', skills: ['Research portals', 'Prototypes', 'Academic tools'], icon: BookOpen },
   { title: 'Cloud & Production Engineering', description: 'I deploy reliable systems with Docker, AWS, Cloudflare, CI/CD, and observability in mind.', skills: ['Docker', 'AWS', 'Cloudflare', 'CI/CD'], icon: Cloud },
@@ -141,7 +141,7 @@ export default function Home() {
             const ServiceIcon = service.icon;
             return (
               <article className={`service-card service-card-${index + 1} ${index === 0 ? 'service-card-featured' : ''}`} key={service.title}>
-                <header><span className="service-icon"><ServiceIcon aria-hidden="true" /></span><span className="service-menu" aria-hidden="true"><i /><i /><i /></span></header>
+                <header><span className="service-icon"><ServiceIcon aria-hidden="true" /></span></header>
                 <h3>{service.title}</h3>
                 <p>{service.description}</p>
                 <div>{service.skills.map((skill) => <span key={skill}>{skill}</span>)}</div>
