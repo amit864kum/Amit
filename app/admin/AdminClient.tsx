@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { Post, Project } from '@/lib/content';
 
 export type AdminMessage = { id: number; name: string; email: string; service: string; budget: string | null; message: string; createdAt: string; status: string };
-const emptyProject: Project = { id: 0, slug: '', title: '', category: '', summary: '', body: '', tech: '', year: new Date().getFullYear().toString(), imageUrl: '', projectUrl: '', githubUrl: '', featured: 0 };
+const emptyProject: Project = { id: 0, slug: '', title: '', category: '', summary: '', body: '', contentJson: null, tech: '', year: new Date().getFullYear().toString(), imageUrl: '', projectUrl: '', githubUrl: '', featured: 0, displayOrder: 0 };
 const emptyPost: Post = { id: 0, slug: '', title: '', excerpt: '', body: '', category: 'Engineering', imageUrl: '', featured: 0, publishedAt: new Date().toISOString().slice(0,10), published: 1 };
 
 export default function AdminClient({ projects, posts, messages }: { projects: Project[]; posts: Post[]; messages: AdminMessage[] }) {

@@ -24,7 +24,7 @@ export default function LoginForm() {
       <label>Password<input name="password" type="password" autoComplete="current-password" required /></label>
       <button className="admin-primary" disabled={state === 'loading'}>{state === 'loading' ? 'Signing in…' : 'Sign in'}</button>
       {state === 'error' && <p className="login-error" role="alert">The username or password is incorrect.</p>}
-      <Link href="/">← Return to portfolio</Link>
+      <div className="studio-auth-links"><Link href="/admin/forgot-password">Forgot password?</Link><Link href="/">Return to portfolio</Link></div>
     </form>
   );
 }

@@ -7,7 +7,7 @@ import SiteFooter from '@/components/SiteFooter';
 import ReadingProgress from '@/components/ReadingProgress';
 import ShareActions from '@/components/ShareActions';
 import { getPost, getPosts } from '@/lib/content';
-import { articleImage, articleSections, readingTime } from '@/lib/blog';
+import { articleBlocks, blockSections, readingTime } from '@/lib/blog';
 
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ slug: string }> };
@@ -30,7 +30,7 @@ export default async function PostPage({ params }: Props) {
   const posts = await getPosts();
   const index = posts.findIndex((item) => item.id === post.id);
   const related = posts.filter((item) => item.id !== post.id).sort((a, b) => Number(b.category === post.category) - Number(a.category === post.category)).slice(0, 2);
-  const sections = articleSections(post.body);
+  const sections = blockSections(articleBlocks(post.contentJson, post.body));
   const reading = readingTime(post.body);
   return (
     <main className="inner-page article-page">
@@ -47,9 +47,10 @@ export default async function PostPage({ params }: Props) {
         {post.imageUrl ? <div className="article-cover"><Image src={post.imageUrl} alt={post.title} fill sizes="(max-width: 980px) 92vw, 900px" priority /></div> : null}
         <div className="article-layout">
           <aside className="article-sidebar"><p>In this article</p><nav>{sections.map((section) => <a href={'#' + section.id} key={section.id}>{section.heading}</a>)}</nav><ShareActions title={post.title} /></aside>
-          <div className="article-prose">{sections.map((section) => <section id={section.id} key={section.id}><h2>{section.heading}</h2>{section.paragraphs.map((paragraph, paragraphIndex) => {
-            const image = articleImage(paragraph);
-            return image ? <figure className="article-inline-image" key={paragraphIndex}><div><Image src={image.src} alt={image.alt} fill sizes="(max-width: 820px) 92vw, 760px" loading="lazy" /></div><figcaption>{image.alt}</figcaption></figure> : <p key={paragraphIndex}>{paragraph}</p>;
+          <div className="article-prose">{sections.map((section) => <section id={section.id} key={section.id}><h2>{section.heading}</h2>{section.blocks.map((block) => {
+            if (block.type === 'paragraph') return <p key={block.id}>{block.text}</p>;
+            if (block.type === 'image' && block.imageUrl) return <figure className="article-inline-image" key={block.id}>{block.imageHeading ? <h3>{block.imageHeading}</h3> : null}<div><Image src={block.imageUrl} alt={block.alt || 'Article image'} fill sizes="(max-width: 820px) 92vw, 760px" loading="lazy" /></div>{block.imageDescription ? <figcaption>{block.imageDescription}</figcaption> : null}</figure>;
+            return null;
           })}</section>)}</div>
         </div>
         <section className="author-card"><div><p className="eyebrow">About the author</p><h3>Amit Kumar</h3><p>Full-stack developer and blockchain engineer translating research and complex infrastructure into clear, dependable digital products.</p><Link href="/about">More about Amit ↗</Link></div></section>

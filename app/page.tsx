@@ -1,5 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { ArrowUpRight, BookOpen, Box, BrainCircuit, Cloud, Network, type LucideIcon } from 'lucide-react';
+import { brandIcons, hyperledgerFabricLogo, type BrandMark } from '@/lib/brand-icons';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import ScrollScene from '@/components/ScrollScene';
@@ -12,18 +14,85 @@ const projects = [
   { number: '03', slug: 'fedchain', title: 'FedChain', type: 'Distributed systems / Research' },
 ];
 const services = [
-  { number: '01', title: 'Full-Stack Product Development', description: 'I turn product ideas into responsive, scalable web applications—from interface architecture to production-ready APIs.', proof: 'Museiac · PhotoFinder', skills: ['Product UI', 'Backend APIs', 'Databases'] },
-  { number: '02', title: 'Blockchain Systems', description: 'I build permissioned networks, smart-contract workflows, and traceable platforms for real operational challenges.', proof: 'Supply Chain · Land Registry', skills: ['Hyperledger', 'Go chaincode', 'IPFS'] },
-  { number: '03', title: 'AI & Distributed Intelligence', description: 'I develop privacy-aware intelligent systems using computer vision, federated learning, and peer-to-peer coordination.', proof: 'PhotoFinder · FedChain', skills: ['AI vision', 'FedAvg', 'P2P systems'] },
-  { number: '04', title: 'Research Platforms', description: 'I translate complex academic work into clear digital platforms for laboratories, publications, people, and infrastructure.', proof: 'IIT Patna · Research portals', skills: ['Information design', 'Next.js', 'Deployment'] },
-  { number: '05', title: 'Cloud & Production Engineering', description: 'I ship dependable software with secure APIs, real-time communication, containers, and modern cloud infrastructure.', proof: 'Docker · AWS · Cloudflare', skills: ['REST APIs', 'WebSockets', 'CI-ready builds'] },
+  { title: 'Full-Stack Product Development', description: 'I turn product ideas into scalable web applications—from interface architecture to production-ready APIs.', skills: ['Product UI', 'Backend APIs', 'Databases'], icon: Box },
+  { title: 'Blockchain Systems', description: 'I build permissioned networks, smart-contract workflows, and traceable platforms for real operational challenges.', skills: ['Hyperledger', 'Go chaincode', 'IPFS'], icon: Network },
+  { title: 'AI & Distributed Intelligence', description: 'I develop privacy-aware intelligent systems using computer vision, federated learning, and peer-to-peer coordination.', skills: ['AI vision', 'FedAvg', 'P2P systems'], icon: BrainCircuit },
+  { title: 'Research Platforms', description: 'I translate academic work into usable platforms, demos, and research-oriented products.', skills: ['Research portals', 'Prototypes', 'Academic tools'], icon: BookOpen },
+  { title: 'Cloud & Production Engineering', description: 'I deploy reliable systems with Docker, AWS, Cloudflare, CI/CD, and observability in mind.', skills: ['Docker', 'AWS', 'Cloudflare', 'CI/CD'], icon: Cloud },
+] satisfies Array<{ title: string; description: string; skills: string[]; icon: LucideIcon }>;
+type StackTool =
+  | { name: string; icon: BrandMark; symbol?: never; imageSrc?: never }
+  | { name: string; symbol: string; icon?: never; imageSrc?: never }
+  | { name: string; imageSrc: string; icon?: never; symbol?: never };
+type StackLayer = { label: string; number: string; description: string; tools: StackTool[] };
+
+const stackLayers: StackLayer[] = [
+  {
+    label: 'Experience Layer',
+    number: '01',
+    description: 'Fast, accessible interfaces shaped around real user journeys.',
+    tools: [
+      { name: 'React', icon: brandIcons.react },
+      { name: 'Next.js', icon: brandIcons.nextdotjs },
+      { name: 'TypeScript', icon: brandIcons.typescript },
+      { name: 'Tailwind CSS', icon: brandIcons.tailwindcss },
+    ],
+  },
+  {
+    label: 'Application Layer',
+    number: '02',
+    description: 'Typed services, real-time flows, and dependable data foundations.',
+    tools: [
+      { name: 'Node.js', icon: brandIcons.nodedotjs },
+      { name: 'Express.js', icon: brandIcons.express },
+      { name: 'REST APIs', symbol: '{ }' },
+      { name: 'WebSockets', symbol: 'WS' },
+      { name: 'PostgreSQL', icon: brandIcons.postgresql },
+    ],
+  },
+  {
+    label: 'Intelligence & Trust',
+    number: '03',
+    description: 'Applied AI and verifiable systems for complex product challenges.',
+    tools: [
+      { name: 'Python', icon: brandIcons.python },
+      { name: 'PyTorch', icon: brandIcons.pytorch },
+      { name: 'Hyperledger Fabric', imageSrc: hyperledgerFabricLogo },
+      { name: 'Go', icon: brandIcons.go },
+      { name: 'IPFS', icon: brandIcons.ipfs },
+    ],
+  },
+  {
+    label: 'Delivery Layer',
+    number: '04',
+    description: 'Portable, observable software ready for production environments.',
+    tools: [
+      { name: 'Docker', icon: brandIcons.docker },
+      { name: 'AWS', icon: brandIcons.amazonaws },
+      { name: 'Cloudflare', icon: brandIcons.cloudflare },
+      { name: 'GitHub', icon: brandIcons.github },
+    ],
+  },
 ];
-const stackLayers = [
-  { label: 'Experience layer', number: '01', description: 'Fast, accessible interfaces shaped around real user journeys.', tools: ['React', 'Next.js', 'TypeScript', 'Tailwind CSS'] },
-  { label: 'Application layer', number: '02', description: 'Typed services, real-time flows, and dependable data foundations.', tools: ['Node.js', 'Express.js', 'REST APIs', 'WebSockets', 'PostgreSQL'] },
-  { label: 'Intelligence & trust', number: '03', description: 'Applied AI and verifiable systems for complex product challenges.', tools: ['Python', 'PyTorch', 'Hyperledger Fabric', 'Go', 'IPFS'] },
-  { label: 'Delivery layer', number: '04', description: 'Portable, observable software ready for production environments.', tools: ['Docker', 'AWS', 'Cloudflare', 'GitHub'] },
-];
+
+function StackToolIcon({ tool }: { tool: StackTool }) {
+  if ('imageSrc' in tool) {
+    return <Image className="stack-brand-wordmark" src={tool.imageSrc} alt={tool.name} width={118} height={30} unoptimized />;
+  }
+  if ('symbol' in tool) return <span className="stack-protocol-icon" aria-hidden="true">{tool.symbol}</span>;
+
+  return (
+    <svg
+      className="stack-brand-icon"
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      style={{ color: `#${tool.icon.hex}` }}
+    >
+      <path d={tool.icon.path} />
+    </svg>
+  );
+}
 
 export default function Home() {
   return (
@@ -39,7 +108,7 @@ export default function Home() {
             high-impact experiences where thoughtful design meets dependable code.
           </p>
           <div className="hero-actions">
-            <MagneticLink href="/work" className="button button-primary">Explore my work <span>↗</span></MagneticLink>
+            <MagneticLink href="/projects" className="button button-primary">Explore my work <span>↗</span></MagneticLink>
             <a href="mailto:amitkumarabhinav59@gmail.com" className="text-link">amitkumarabhinav59@gmail.com</a>
           </div>
           <div className="hero-proof" aria-label="Professional highlights"><p><strong>06+</strong><span>Products and research<br />platforms shipped</span></p><p><strong>04</strong><span>Engineering<br />disciplines</span></p><p><strong>IIT</strong><span>Patna research<br />experience</span></p></div>
@@ -60,34 +129,42 @@ export default function Home() {
       <ScrollTicker items={['Full-stack systems', 'Blockchain products', 'Applied AI', 'Product experience', 'Cloud delivery']} />
 
       <section className="what-i-do" aria-labelledby="what-i-do-heading">
+        <div className="what-i-do-atmosphere" aria-hidden="true"><i /><i /><i /></div>
         <div className="what-i-do-intro">
-          <p className="eyebrow">What I do</p>
+          <p className="eyebrow"><span aria-hidden="true" />What I do</p>
           <h2 id="what-i-do-heading">Ideas in.<br /><em>Impact out.</em></h2>
           <p>I work at the intersection of product thinking, emerging technology, and reliable engineering.</p>
-          <Link href="/work" className="read-link">See the work behind it ↗</Link>
+          <Link href="/projects" className="read-link what-i-do-link"><span>See the work behind it</span><i aria-hidden="true"><ArrowUpRight /></i></Link>
         </div>
         <div className="service-grid">
-          {services.map((service, index) => (
-            <article className={`service-card service-card-${index + 1} ${index === 0 ? 'service-card-featured' : ''}`} key={service.number}>
-              <header><span>{service.number}</span><small>{service.proof}</small></header>
-              <h3>{service.title}</h3>
-              <p>{service.description}</p>
-              <div>{service.skills.map((skill) => <span key={skill}>{skill}</span>)}</div>
-            </article>
-          ))}
+          {services.map((service, index) => {
+            const ServiceIcon = service.icon;
+            return (
+              <article className={`service-card service-card-${index + 1} ${index === 0 ? 'service-card-featured' : ''}`} key={service.title}>
+                <header><span className="service-icon"><ServiceIcon aria-hidden="true" /></span><span className="service-menu" aria-hidden="true"><i /><i /><i /></span></header>
+                <h3>{service.title}</h3>
+                <p>{service.description}</p>
+                <div>{service.skills.map((skill) => <span key={skill}>{skill}</span>)}</div>
+              </article>
+            );
+          })}
         </div>
       </section>
 
       <section className="tech-stack" aria-labelledby="tech-stack-heading">
-        <div className="tech-stack-heading">
-          <div><p className="eyebrow">Technology stack</p><h2 id="tech-stack-heading">Built in layers.<br /><em>Shipped as one.</em></h2></div>
-          <div className="stack-principle"><span>Principle 01</span><p>Technology is a means to a clear, dependable product—not the headline.</p></div>
-        </div>
         <div className="stack-architecture">
-          <div className="stack-blueprint" aria-hidden="true">
-            <span>Product architecture</span>
-            <div><i /><i /><i /><i /></div>
-            <strong>Ideas become<br />working systems.</strong>
+          <div className="stack-blueprint">
+            <div className="stack-blueprint-copy">
+              <p className="eyebrow">Product architecture<span aria-hidden="true">—</span></p>
+              <h2 id="tech-stack-heading">Tech Stack</h2>
+              <p>Modern technologies I use to build scalable, reliable, and intelligent digital products.</p>
+            </div>
+            <div className="stack-blueprint-art" aria-hidden="true">
+              <div className="stack-art-orbit" />
+              <div className="stack-art-columns"><i /><i /><i /><i /><i /></div>
+              <div className="stack-art-path"><i /><i /><i /></div>
+            </div>
+            <blockquote><span aria-hidden="true">“</span>Ideas become<br /><em>working systems.</em></blockquote>
             <small>Interface → Infrastructure</small>
           </div>
           <div className="stack-layers">
@@ -95,12 +172,13 @@ export default function Home() {
               <article className="stack-layer" key={layer.label}>
                 <span>{layer.number}</span>
                 <div><h3>{layer.label}</h3><p>{layer.description}</p></div>
-                <ul>{layer.tools.map((tool) => <li key={tool}>{tool}</li>)}</ul>
+                <ul>
+                  {layer.tools.map((tool) => <li className="stack-tool" key={tool.name}><StackToolIcon tool={tool} />{'imageSrc' in tool ? null : <span>{tool.name}</span>}</li>)}
+                </ul>
               </article>
             ))}
           </div>
         </div>
-        <div className="stack-footer"><p><span /> Production-minded by default</p><Link href="/about">Explore my technical background ↗</Link></div>
       </section>
 
       <section className="selected-work" aria-labelledby="selected-work-heading">
@@ -114,7 +192,7 @@ export default function Home() {
 
         <div className="project-grid">
           {projects.map((project) => (
-            <Link href={`/work/${project.slug}`} className="project-card" key={project.number}>
+            <Link href={`/projects/${project.slug}`} className="project-card" key={project.number}>
               <div className="project-visual">
                 <span className="project-number">{project.number}</span>
                 <span className="project-placeholder">Project imagery<br />managed in CMS</span>

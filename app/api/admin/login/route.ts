@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { ADMIN_COOKIE, adminSessionMaxAge, createAdminToken, verifyAdminCredentials } from '@/lib/admin';
 
 export async function POST(request: Request) {
-  const body = await request.json() as { username?: string; password?: string };
+  const body = await request.json().catch(() => null) as { username?: string; password?: string } | null;
+  if (!body) return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   const username = String(body.username ?? '').slice(0, 80);
   const password = String(body.password ?? '').slice(0, 256);
   if (!await verifyAdminCredentials(username, password)) {

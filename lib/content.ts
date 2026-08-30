@@ -2,12 +2,12 @@ import { env } from 'cloudflare:workers';
 
 export type Project = {
   id: number; slug: string; title: string; category: string; summary: string;
-  body: string; tech: string; year: string; imageUrl: string | null;
-  projectUrl: string | null; githubUrl: string | null; featured: number;
+  body: string; contentJson: string | null; tech: string; year: string; imageUrl: string | null;
+  projectUrl: string | null; githubUrl: string | null; featured: number; displayOrder: number;
 };
 export type Post = {
   id: number; slug: string; title: string; excerpt: string; body: string;
-  category: string; imageUrl: string | null; featured: number;
+  contentJson: string | null; category: string; imageUrl: string | null; featured: number;
   publishedAt: string; published: number;
 };
 
@@ -37,14 +37,15 @@ async function initializeContentTables() {
   await db.batch([
     db.prepare(`CREATE TABLE IF NOT EXISTS projects (
       id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL,
-      category TEXT NOT NULL, summary TEXT NOT NULL, body TEXT NOT NULL, tech TEXT NOT NULL,
+      category TEXT NOT NULL, summary TEXT NOT NULL, body TEXT NOT NULL, content_json TEXT, tech TEXT NOT NULL,
       year TEXT NOT NULL, image_url TEXT, project_url TEXT, github_url TEXT,
-      featured INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      featured INTEGER NOT NULL DEFAULT 0, display_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`),
     db.prepare(`CREATE TABLE IF NOT EXISTS posts (
       id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL,
-      excerpt TEXT NOT NULL, body TEXT NOT NULL, category TEXT NOT NULL DEFAULT 'Engineering',
+      excerpt TEXT NOT NULL, body TEXT NOT NULL, content_json TEXT, category TEXT NOT NULL DEFAULT 'Engineering',
       image_url TEXT, featured INTEGER NOT NULL DEFAULT 0, published_at TEXT NOT NULL,
       published INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -64,13 +65,29 @@ async function initializeContentTables() {
   if (!postColumns.has('category')) postMigrations.push(db.prepare("ALTER TABLE posts ADD COLUMN category TEXT NOT NULL DEFAULT 'Engineering'"));
   if (!postColumns.has('image_url')) postMigrations.push(db.prepare('ALTER TABLE posts ADD COLUMN image_url TEXT'));
   if (!postColumns.has('featured')) postMigrations.push(db.prepare('ALTER TABLE posts ADD COLUMN featured INTEGER NOT NULL DEFAULT 0'));
+  if (!postColumns.has('content_json')) postMigrations.push(db.prepare('ALTER TABLE posts ADD COLUMN content_json TEXT'));
   if (postMigrations.length) await db.batch(postMigrations);
   await db.prepare('CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category)').run();
+  const projectColumnResult = await db.prepare('PRAGMA table_info(projects)').all<{ name: string }>();
+  const projectColumns = new Set(projectColumnResult.results.map((column) => column.name));
+  if (!projectColumns.has('content_json')) {
+    await db.prepare('ALTER TABLE projects ADD COLUMN content_json TEXT').run();
+  }
+  if (!projectColumns.has('display_order')) {
+    await db.prepare('ALTER TABLE projects ADD COLUMN display_order INTEGER NOT NULL DEFAULT 0').run();
+    await db.prepare(`UPDATE projects SET display_order = (
+      SELECT COUNT(*) FROM projects AS candidate
+      WHERE candidate.featured > projects.featured
+        OR (candidate.featured = projects.featured AND candidate.year > projects.year)
+        OR (candidate.featured = projects.featured AND candidate.year = projects.year AND candidate.id < projects.id)
+    )`).run();
+  }
+  await db.prepare('CREATE INDEX IF NOT EXISTS idx_projects_display_order ON projects(display_order)').run();
   const projectCount = await db.prepare('SELECT COUNT(*) AS count FROM projects').first<{ count: number }>();
   if (!projectCount?.count) {
-    await db.batch(seedProjects.map((p) => db.prepare(
-      'INSERT INTO projects (slug,title,category,summary,body,tech,year,project_url,featured) VALUES (?,?,?,?,?,?,?,?,?)',
-    ).bind(...p)));
+    await db.batch(seedProjects.map((p, index) => db.prepare(
+      'INSERT INTO projects (slug,title,category,summary,body,tech,year,project_url,featured,display_order) VALUES (?,?,?,?,?,?,?,?,?,?)',
+    ).bind(...p, index)));
   }
   const postCount = await db.prepare('SELECT COUNT(*) AS count FROM posts').first<{ count: number }>();
   if (!postCount?.count) {
@@ -88,20 +105,20 @@ async function initializeContentTables() {
 export async function getProjects(featuredOnly = false): Promise<Project[]> {
   await ensureContentTables();
   const query = featuredOnly
-    ? 'SELECT id,slug,title,category,summary,body,tech,year,image_url AS imageUrl,project_url AS projectUrl,github_url AS githubUrl,featured FROM projects WHERE featured = 1 ORDER BY year DESC,id'
-    : 'SELECT id,slug,title,category,summary,body,tech,year,image_url AS imageUrl,project_url AS projectUrl,github_url AS githubUrl,featured FROM projects ORDER BY featured DESC,year DESC,id';
+    ? 'SELECT id,slug,title,category,summary,body,content_json AS contentJson,tech,year,image_url AS imageUrl,project_url AS projectUrl,github_url AS githubUrl,featured,display_order AS displayOrder FROM projects WHERE featured = 1 ORDER BY display_order,id'
+    : 'SELECT id,slug,title,category,summary,body,content_json AS contentJson,tech,year,image_url AS imageUrl,project_url AS projectUrl,github_url AS githubUrl,featured,display_order AS displayOrder FROM projects ORDER BY display_order,id';
   return (await env.DB.prepare(query).all<Project>()).results;
 }
 export async function getProject(slug: string): Promise<Project | null> {
   await ensureContentTables();
-  return env.DB.prepare('SELECT id,slug,title,category,summary,body,tech,year,image_url AS imageUrl,project_url AS projectUrl,github_url AS githubUrl,featured FROM projects WHERE slug = ?').bind(slug).first<Project>();
+  return env.DB.prepare('SELECT id,slug,title,category,summary,body,content_json AS contentJson,tech,year,image_url AS imageUrl,project_url AS projectUrl,github_url AS githubUrl,featured,display_order AS displayOrder FROM projects WHERE slug = ?').bind(slug).first<Project>();
 }
 export async function getPosts(includeDrafts = false): Promise<Post[]> {
   await ensureContentTables();
   const where = includeDrafts ? '' : 'WHERE published = 1';
-  return (await env.DB.prepare('SELECT id,slug,title,excerpt,body,category,image_url AS imageUrl,featured,published_at AS publishedAt,published FROM posts ' + where + ' ORDER BY featured DESC,published_at DESC,id DESC').all<Post>()).results;
+  return (await env.DB.prepare('SELECT id,slug,title,excerpt,body,content_json AS contentJson,category,image_url AS imageUrl,featured,published_at AS publishedAt,published FROM posts ' + where + ' ORDER BY featured DESC,published_at DESC,id DESC').all<Post>()).results;
 }
 export async function getPost(slug: string): Promise<Post | null> {
   await ensureContentTables();
-  return env.DB.prepare('SELECT id,slug,title,excerpt,body,category,image_url AS imageUrl,featured,published_at AS publishedAt,published FROM posts WHERE slug = ? AND published = 1').bind(slug).first<Post>();
+  return env.DB.prepare('SELECT id,slug,title,excerpt,body,content_json AS contentJson,category,image_url AS imageUrl,featured,published_at AS publishedAt,published FROM posts WHERE slug = ? AND published = 1').bind(slug).first<Post>();
 }

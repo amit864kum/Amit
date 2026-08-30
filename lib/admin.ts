@@ -1,6 +1,8 @@
 import { env } from 'cloudflare:workers';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { getAdminPasswordHash } from '@/lib/admin-security';
+import { verifyPassword } from '@/lib/security-crypto';
 
 export const ADMIN_COOKIE = 'amit_admin_session';
 const SESSION_SECONDS = 60 * 60 * 12;
@@ -29,13 +31,7 @@ function safeEqual(left: Uint8Array, right: Uint8Array) {
 
 export async function verifyAdminCredentials(username: string, password: string) {
   if (!username || username !== config('ADMIN_USERNAME')) return false;
-  const [algorithm, iterationText, saltText, expectedText] = config('ADMIN_PASSWORD_HASH').split('$');
-  if (algorithm !== 'pbkdf2_sha256') return false;
-  const iterations = Number(iterationText);
-  if (!Number.isSafeInteger(iterations) || iterations < 100_000) return false;
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
-  const derived = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: base64UrlToBytes(saltText), iterations }, key, 256);
-  return safeEqual(new Uint8Array(derived), base64UrlToBytes(expectedText));
+  return verifyPassword(password, await getAdminPasswordHash(username));
 }
 
 async function sign(value: string) {

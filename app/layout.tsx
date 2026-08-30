@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
 import PremiumMotion from '@/components/PremiumMotion';
+import PrivacyExperience from '@/components/PrivacyExperience';
 import './globals.css';
 import './premium.css';
 
@@ -53,6 +54,7 @@ export default function RootLayout({
       >
         <a className="skip-link" href="#main-content">Skip to main content</a>
         <PremiumMotion>{children}</PremiumMotion>
+        <PrivacyExperience measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
       </body>
     </html>
   );

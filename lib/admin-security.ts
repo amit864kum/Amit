@@ -1,0 +1,106 @@
+import { env } from 'cloudflare:workers';
+import { hashPassword, hmacValue, passwordPolicy, timingSafeEqual } from '@/lib/security-crypto';
+
+function config(name: string) {
+  const runtime = env as unknown as Record<string, string | undefined>;
+  return runtime[name] ?? process.env[name] ?? '';
+}
+
+let securityInitialization: Promise<void> | null = null;
+export function ensureAdminSecurityTables() {
+  if (!securityInitialization) securityInitialization = initialize().catch((error) => { securityInitialization = null; throw error; });
+  return securityInitialization;
+}
+
+async function initialize() {
+  await env.DB.batch([
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS admin_security (
+      username TEXT PRIMARY KEY,password_hash TEXT NOT NULL,updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS password_reset_codes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT NOT NULL,email TEXT NOT NULL,
+      code_hash TEXT NOT NULL,expires_at TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,
+      consumed_at TEXT,requested_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_password_resets_user_time ON password_reset_codes(username,requested_at)'),
+  ]);
+}
+
+export async function getAdminPasswordHash(username: string) {
+  await ensureAdminSecurityTables();
+  const row = await env.DB.prepare('SELECT password_hash AS passwordHash FROM admin_security WHERE username=?').bind(username).first<{ passwordHash: string }>();
+  return row?.passwordHash || config('ADMIN_PASSWORD_HASH');
+}
+
+function maskedEmail(email: string) {
+  const [name, domain] = email.split('@');
+  if (!domain) return 'the configured admin email';
+  return `${name.slice(0, 2)}${'*'.repeat(Math.max(3, name.length - 2))}@${domain}`;
+}
+
+function generateCode() {
+  const values = crypto.getRandomValues(new Uint32Array(1));
+  return String(values[0] % 1_000_000).padStart(6, '0');
+}
+
+async function codeHash(username: string, code: string) {
+  return hmacValue(config('ADMIN_SESSION_SECRET'), `${username}:${code}`);
+}
+
+async function sendResetEmail(email: string, code: string) {
+  const apiKey = config('RESEND_API_KEY');
+  if (!apiKey) return { delivered: false, previewCode: process.env.NODE_ENV === 'production' ? undefined : code };
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json', 'idempotency-key': crypto.randomUUID() },
+    body: JSON.stringify({
+      from: config('RESEND_FROM_EMAIL') || 'Amit Portfolio <onboarding@resend.dev>',
+      to: [email],
+      subject: 'Your Amit Portfolio admin verification code',
+      html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:32px"><p style="color:#6b7280">AMIT PORTFOLIO ADMIN</p><h1 style="font-size:28px">Reset your password</h1><p>Use this one-time code to continue:</p><p style="font-size:36px;letter-spacing:8px;font-weight:700">${code}</p><p>This code expires in 10 minutes. If you did not request it, no action is required.</p></div>`,
+    }),
+  });
+  return { delivered: response.ok, previewCode: undefined as string | undefined };
+}
+
+export async function requestAdminReset(identifier: string) {
+  await ensureAdminSecurityTables();
+  const username = config('ADMIN_USERNAME');
+  const email = config('ADMIN_EMAIL') || 'amitkumarabhinav59@gmail.com';
+  const matches = identifier.trim().toLowerCase() === username.toLowerCase() || identifier.trim().toLowerCase() === email.toLowerCase();
+  if (!matches) return { accepted: true, destination: maskedEmail(email) };
+  const recent = await env.DB.prepare("SELECT COUNT(*) AS count FROM password_reset_codes WHERE username=? AND datetime(requested_at)>=datetime('now','-15 minutes')").bind(username).first<{ count: number }>();
+  if (Number(recent?.count || 0) >= 3) return { accepted: false, destination: maskedEmail(email), error: 'Too many requests. Try again in 15 minutes.' };
+  const code = generateCode();
+  const expiresAt = new Date(Date.now() + 10 * 60_000).toISOString();
+  await env.DB.batch([
+    env.DB.prepare('UPDATE password_reset_codes SET consumed_at=CURRENT_TIMESTAMP WHERE username=? AND consumed_at IS NULL').bind(username),
+    env.DB.prepare('INSERT INTO password_reset_codes (username,email,code_hash,expires_at,requested_at) VALUES (?,?,?,?,?)').bind(username, email, await codeHash(username, code), expiresAt, new Date().toISOString()),
+  ]);
+  const delivery = await sendResetEmail(email, code);
+  if (!delivery.delivered && !delivery.previewCode) return { accepted: false, destination: maskedEmail(email), error: 'Email delivery is not configured yet.' };
+  return { accepted: true, destination: maskedEmail(email), previewCode: delivery.previewCode };
+}
+
+export async function resetAdminPassword(code: string, password: string) {
+  await ensureAdminSecurityTables();
+  const policyError = passwordPolicy(password);
+  if (policyError) return { ok: false, error: policyError };
+  const username = config('ADMIN_USERNAME');
+  const row = await env.DB.prepare(`SELECT id,code_hash AS codeHash,expires_at AS expiresAt,attempts FROM password_reset_codes
+    WHERE username=? AND consumed_at IS NULL ORDER BY requested_at DESC LIMIT 1`).bind(username).first<{ id: number; codeHash: string; expiresAt: string; attempts: number }>();
+  if (!row || row.attempts >= 5 || new Date(row.expiresAt).getTime() < Date.now()) return { ok: false, error: 'The code is invalid or has expired.' };
+  const expected = await codeHash(username, code.trim());
+  const valid = timingSafeEqual(new TextEncoder().encode(expected), new TextEncoder().encode(row.codeHash));
+  if (!valid) {
+    await env.DB.prepare('UPDATE password_reset_codes SET attempts=attempts+1 WHERE id=?').bind(row.id).run();
+    return { ok: false, error: 'The code is invalid or has expired.' };
+  }
+  const newHash = await hashPassword(password);
+  await env.DB.batch([
+    env.DB.prepare(`INSERT INTO admin_security (username,password_hash,updated_at) VALUES (?,?,CURRENT_TIMESTAMP)
+      ON CONFLICT(username) DO UPDATE SET password_hash=excluded.password_hash,updated_at=CURRENT_TIMESTAMP`).bind(username, newHash),
+    env.DB.prepare('UPDATE password_reset_codes SET consumed_at=CURRENT_TIMESTAMP WHERE id=?').bind(row.id),
+  ]);
+  return { ok: true };
+}

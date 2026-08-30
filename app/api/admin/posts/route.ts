@@ -5,6 +5,7 @@ import { ensureContentTables } from '@/lib/content';
 
 type PostPayload = {
   id?: number; slug: string; title: string; excerpt: string; body: string;
+  contentJson?: string | null;
   category: string; imageUrl?: string | null; featured?: number;
   publishedAt: string; published?: number;
 };
@@ -13,13 +14,13 @@ async function authorized() { await ensureContentTables(); return requireAdminAp
 export async function POST(request: Request) {
   if (!await authorized()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const p = await request.json() as PostPayload;
-  await env.DB.prepare('INSERT INTO posts (slug,title,excerpt,body,category,image_url,featured,published_at,published) VALUES (?,?,?,?,?,?,?,?,?)').bind(p.slug,p.title,p.excerpt,p.body,p.category,p.imageUrl||null,p.featured?1:0,p.publishedAt,p.published?1:0).run();
+  await env.DB.prepare('INSERT INTO posts (slug,title,excerpt,body,content_json,category,image_url,featured,published_at,published) VALUES (?,?,?,?,?,?,?,?,?,?)').bind(p.slug,p.title,p.excerpt,p.body,p.contentJson||null,p.category,p.imageUrl||null,p.featured?1:0,p.publishedAt,p.published?1:0).run();
   return NextResponse.json({ ok: true });
 }
 export async function PATCH(request: Request) {
   if (!await authorized()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const p = await request.json() as PostPayload;
-  await env.DB.prepare('UPDATE posts SET slug=?,title=?,excerpt=?,body=?,category=?,image_url=?,featured=?,published_at=?,published=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(p.slug,p.title,p.excerpt,p.body,p.category,p.imageUrl||null,p.featured?1:0,p.publishedAt,p.published?1:0,p.id).run();
+  await env.DB.prepare('UPDATE posts SET slug=?,title=?,excerpt=?,body=?,content_json=?,category=?,image_url=?,featured=?,published_at=?,published=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(p.slug,p.title,p.excerpt,p.body,p.contentJson||null,p.category,p.imageUrl||null,p.featured?1:0,p.publishedAt,p.published?1:0,p.id).run();
   return NextResponse.json({ ok: true });
 }
 export async function DELETE(request: Request) {

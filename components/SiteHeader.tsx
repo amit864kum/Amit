@@ -9,7 +9,7 @@ import ThemeToggle from './ThemeToggle';
 const navigation = [
   { href: '/', label: 'Home' },
   { href: '/about', label: 'About' },
-  { href: '/work', label: 'Projects' },
+  { href: '/projects', label: 'Projects' },
   { href: '/contact', label: 'Contact' },
   { href: '/blog', label: 'Blog' },
 ];
