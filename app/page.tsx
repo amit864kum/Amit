@@ -160,9 +160,13 @@ export default function Home() {
               <p>Modern technologies I use to build scalable, reliable, and intelligent digital products.</p>
             </div>
             <div className="stack-blueprint-art" aria-hidden="true">
-              <div className="stack-art-orbit" />
-              <div className="stack-art-columns"><i /><i /><i /><i /><i /></div>
-              <div className="stack-art-path"><i /><i /><i /></div>
+              <Image
+                src="/tech-stack-architecture.png"
+                alt=""
+                width={1152}
+                height={1536}
+                sizes="(max-width: 820px) 90vw, (max-width: 1080px) 46vw, 34vw"
+              />
             </div>
             <blockquote><span aria-hidden="true">“</span>Ideas become<br /><em>working systems.</em></blockquote>
             <small>Interface → Infrastructure</small>
