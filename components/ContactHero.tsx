@@ -22,8 +22,9 @@ export default function ContactHero() {
       const rect = section.getBoundingClientRect();
       const centerOffset = window.innerHeight * 0.5 - (rect.top + rect.height * 0.5);
       const progress = Math.max(-1, Math.min(1, centerOffset / window.innerHeight));
-      visual.style.setProperty('--contact-scroll-y', `${progress * 26}px`);
-      visual.style.setProperty('--contact-scroll-angle', `${progress * 7}deg`);
+      visual.style.setProperty('--contact-scroll-y', `${progress * 22}px`);
+      visual.style.setProperty('--contact-scroll-angle', `${progress * 86}deg`);
+      visual.style.setProperty('--contact-scroll-reverse-angle', `${progress * -62}deg`);
     };
 
     const onScroll = () => {
