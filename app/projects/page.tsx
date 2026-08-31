@@ -60,7 +60,6 @@ export default async function ProjectsPage() {
       <SiteHeader solid />
       <section className="projects-hero" aria-labelledby="projects-heading">
         <div className="projects-hero-copy">
-          <p className="projects-hero-kicker"><span aria-hidden="true" />Project page</p>
           <h1 id="projects-heading">
             <span>Complex systems.</span>
             <em>Clear outcomes.</em>
