@@ -1,6 +1,24 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
+import {
+  ArrowRight,
+  Box,
+  Boxes,
+  BrainCircuit,
+  Cloud,
+  Code2,
+  Database,
+  Layers3,
+  Link2,
+  Monitor,
+  Plug,
+  Search,
+  Send,
+  Sparkles,
+  Target,
+  Workflow,
+  type LucideIcon,
+} from 'lucide-react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import ProjectExplorer from './ProjectExplorer';
@@ -13,6 +31,28 @@ export const metadata: Metadata = {
   alternates: { canonical: '/projects' },
 };
 
+const workSteps = [
+  { number: '1', title: 'Understand', description: 'Clarify goals, users, and constraints.', icon: Search },
+  { number: '2', title: 'Engineer', description: 'Design robust systems and ship iteratively.', icon: Code2 },
+  { number: '3', title: 'Deliver', description: 'Ensure quality, scalability, and long-term value.', icon: Send },
+] satisfies Array<{ number: string; title: string; description: string; icon: LucideIcon }>;
+
+const focusAreas = [
+  { label: 'Full-stack', icon: Layers3 },
+  { label: 'AI systems', icon: BrainCircuit },
+  { label: 'Blockchain', icon: Link2 },
+  { label: 'Cloud', icon: Cloud },
+  { label: 'APIs', icon: Plug },
+  { label: 'Architecture', icon: Box },
+] satisfies Array<{ label: string; icon: LucideIcon }>;
+
+const systemFlow = [
+  { label: 'Interface', icon: Monitor },
+  { label: 'Logic', icon: Code2 },
+  { label: 'Services', icon: Boxes },
+  { label: 'Data', icon: Database },
+] satisfies Array<{ label: string; icon: LucideIcon }>;
+
 export default async function ProjectsPage() {
   const projects = await getProjects();
   return (
@@ -20,28 +60,71 @@ export default async function ProjectsPage() {
       <SiteHeader solid />
       <section className="projects-hero" aria-labelledby="projects-heading">
         <div className="projects-hero-copy">
+          <p className="projects-hero-kicker"><span aria-hidden="true" />Project page</p>
           <h1 id="projects-heading">
             <span>Complex systems.</span>
             <em>Clear outcomes.</em>
           </h1>
           <p className="projects-hero-intro">I design and build dependable digital products across full-stack engineering, applied AI, blockchain, and distributed systems.</p>
           <div className="projects-hero-actions">
-            <Link href="/contact">Start a project <ArrowUpRight aria-hidden="true" /></Link>
+            <Link href="/contact">Start a project <ArrowRight aria-hidden="true" /></Link>
             <p><span aria-hidden="true" /> Available for select collaborations</p>
           </div>
         </div>
-        <aside className="projects-hero-system" aria-hidden="true">
-          <div className="projects-system-heading"><span>Working method</span><b>01—03</b></div>
-          <div className="projects-system-statement">
-            <p>From first principle to production</p>
-            <strong>Think.<br />Build.<br /><em>Deliver.</em></strong>
+
+        <aside className="projects-hero-dashboard" aria-label="How I work and areas of focus">
+          <section className="projects-method-panel" aria-labelledby="projects-method-heading">
+            <header>
+              <h2 id="projects-method-heading">How I work</h2>
+              <Sparkles aria-hidden="true" />
+            </header>
+            <ol>
+              {workSteps.map((step) => {
+                const StepIcon = step.icon;
+                return (
+                  <li className="projects-method-step" key={step.number}>
+                    <span className="projects-step-number">{step.number}</span>
+                    <span className="projects-step-icon"><StepIcon aria-hidden="true" /></span>
+                    <h3>{step.title}</h3>
+                    <p>{step.description}</p>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+
+          <div className="projects-dashboard-secondary">
+            <section className="projects-focus-panel" aria-labelledby="projects-focus-heading">
+              <header>
+                <h2 id="projects-focus-heading">Core focus</h2>
+                <Target aria-hidden="true" />
+              </header>
+              <ul>
+                {focusAreas.map((area) => {
+                  const FocusIcon = area.icon;
+                  return <li key={area.label}><FocusIcon aria-hidden="true" /><span>{area.label}</span></li>;
+                })}
+              </ul>
+            </section>
+
+            <section className="projects-thinking-panel" aria-labelledby="projects-thinking-heading">
+              <header>
+                <h2 id="projects-thinking-heading">System thinking</h2>
+                <Workflow aria-hidden="true" />
+              </header>
+              <ol>
+                {systemFlow.map((item) => {
+                  const FlowIcon = item.icon;
+                  return (
+                    <li key={item.label}>
+                      <span><FlowIcon aria-hidden="true" /></span>
+                      <b>{item.label}</b>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
           </div>
-          <ol className="projects-system-steps">
-            <li><span>01</span><b>Understand</b></li>
-            <li><span>02</span><b>Engineer</b></li>
-            <li><span>03</span><b>Deliver</b></li>
-          </ol>
-          <div className="projects-system-footer"><span>AK / Systems</span><span>Built for real use</span></div>
         </aside>
       </section>
       <ProjectExplorer projects={projects} />
