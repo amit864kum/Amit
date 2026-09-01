@@ -73,7 +73,7 @@ export default function HomeSelectedWork({ projects }: { projects: Project[] }) 
               <Link href={href || '#'} target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined} aria-label={`${external ? 'Open' : 'View'} ${project.title} project`}>
                 <div className="hsw-card-copy">
                   <span className="hsw-number">{String(index + 1).padStart(2, '0')}</span>
-                  <span className="hsw-status"><i aria-hidden="true" />{project.category}</span>
+                  <span className="hsw-status"><i aria-hidden="true" /><span>{project.category}</span></span>
                   <h3>{project.title}</h3>
                   <p>{project.summary}</p>
                   <ul>{tags.map((tag) => <li key={tag}><Blocks aria-hidden="true" />{tag}</li>)}</ul>
