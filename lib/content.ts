@@ -1,9 +1,12 @@
 import { env } from 'cloudflare:workers';
+import type { ProjectDestination } from './project-details';
+import { decodePathSegment, toProjectSlug } from '@/lib/slug';
 
 export type Project = {
   id: number; slug: string; title: string; category: string; summary: string;
   body: string; contentJson: string | null; tech: string; year: string; imageUrl: string | null;
-  projectUrl: string | null; githubUrl: string | null; featured: number; displayOrder: number;
+  projectUrl: string | null; githubUrl: string | null; featured: number; destination: ProjectDestination;
+  published: number; showOnProjects: number; detailJson: string | null; displayOrder: number;
 };
 export type Post = {
   id: number; slug: string; title: string; excerpt: string; body: string;
@@ -45,7 +48,9 @@ async function initializeContentTables() {
       id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL,
       category TEXT NOT NULL, summary TEXT NOT NULL, body TEXT NOT NULL, content_json TEXT, tech TEXT NOT NULL,
       year TEXT NOT NULL, image_url TEXT, project_url TEXT, github_url TEXT,
-      featured INTEGER NOT NULL DEFAULT 0, display_order INTEGER NOT NULL DEFAULT 0,
+      featured INTEGER NOT NULL DEFAULT 0, destination TEXT NOT NULL DEFAULT 'case_study',
+      published INTEGER NOT NULL DEFAULT 1, show_on_projects INTEGER NOT NULL DEFAULT 1,
+      detail_json TEXT, display_order INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`),
@@ -95,7 +100,12 @@ async function initializeContentTables() {
         OR (candidate.featured = projects.featured AND candidate.year = projects.year AND candidate.id < projects.id)
     )`).run();
   }
+  if (!projectColumns.has('destination')) await db.prepare("ALTER TABLE projects ADD COLUMN destination TEXT NOT NULL DEFAULT 'case_study'").run();
+  if (!projectColumns.has('published')) await db.prepare('ALTER TABLE projects ADD COLUMN published INTEGER NOT NULL DEFAULT 1').run();
+  if (!projectColumns.has('show_on_projects')) await db.prepare('ALTER TABLE projects ADD COLUMN show_on_projects INTEGER NOT NULL DEFAULT 1').run();
+  if (!projectColumns.has('detail_json')) await db.prepare('ALTER TABLE projects ADD COLUMN detail_json TEXT').run();
   await db.prepare('CREATE INDEX IF NOT EXISTS idx_projects_display_order ON projects(display_order)').run();
+  await db.prepare('CREATE INDEX IF NOT EXISTS idx_projects_public_order ON projects(published,show_on_projects,display_order)').run();
   await db.prepare(`INSERT OR IGNORE INTO resume_settings (id,resume_url,file_name,button_label)
     VALUES (1,'/resume-amit-kumar.pdf','resume-amit-kumar.pdf','Download résumé')`).run();
   const projectCount = await db.prepare('SELECT COUNT(*) AS count FROM projects').first<{ count: number }>();
@@ -117,20 +127,39 @@ async function initializeContentTables() {
   await db.prepare('PRAGMA optimize').run();
 }
 
+const projectSelect = 'SELECT id,slug,title,category,summary,body,content_json AS contentJson,tech,year,image_url AS imageUrl,project_url AS projectUrl,github_url AS githubUrl,featured,destination,published,show_on_projects AS showOnProjects,detail_json AS detailJson,display_order AS displayOrder FROM projects';
+
 export async function getProjects(featuredOnly = false): Promise<Project[]> {
   await ensureContentTables();
   const query = featuredOnly
-    ? 'SELECT id,slug,title,category,summary,body,content_json AS contentJson,tech,year,image_url AS imageUrl,project_url AS projectUrl,github_url AS githubUrl,featured,display_order AS displayOrder FROM projects WHERE featured = 1 ORDER BY display_order,id'
-    : 'SELECT id,slug,title,category,summary,body,content_json AS contentJson,tech,year,image_url AS imageUrl,project_url AS projectUrl,github_url AS githubUrl,featured,display_order AS displayOrder FROM projects ORDER BY display_order,id';
+    ? `${projectSelect} WHERE published=1 AND featured=1 ORDER BY display_order,id`
+    : `${projectSelect} WHERE published=1 AND show_on_projects=1 ORDER BY display_order,id`;
   return (await env.DB.prepare(query).all<Project>()).results;
 }
-export async function getProject(slug: string): Promise<Project | null> {
+export async function getAdminProjects(): Promise<Project[]> {
   await ensureContentTables();
-  return env.DB.prepare('SELECT id,slug,title,category,summary,body,content_json AS contentJson,tech,year,image_url AS imageUrl,project_url AS projectUrl,github_url AS githubUrl,featured,display_order AS displayOrder FROM projects WHERE slug = ?').bind(slug).first<Project>();
+  return (await env.DB.prepare(`${projectSelect} ORDER BY display_order,id`).all<Project>()).results;
+}
+export async function getProject(slug: string, adminPreview = false): Promise<Project | null> {
+  await ensureContentTables();
+  const decodedSlug = decodePathSegment(slug);
+  const visibility = adminPreview ? '' : " AND published=1 AND destination='case_study'";
+  const exact = await env.DB.prepare(`${projectSelect} WHERE (slug = ? OR slug = ?)${visibility} LIMIT 1`).bind(slug, decodedSlug).first<Project>();
+  if (exact) return exact;
+
+  // Older admin records may contain a title or spaces instead of a URL-safe slug.
+  // Keep those links working while all newly saved records use canonical slugs.
+  const requestedCanonical = toProjectSlug(decodedSlug);
+  if (!requestedCanonical) return null;
+  const projects = (await env.DB.prepare(`${projectSelect}${adminPreview ? '' : " WHERE published=1 AND destination='case_study'"}`).all<Project>()).results;
+  return projects.find((project) =>
+    toProjectSlug(project.slug) === requestedCanonical
+    || toProjectSlug(project.title) === requestedCanonical,
+  ) || null;
 }
 export async function getProjectCount(): Promise<number> {
   await ensureContentTables();
-  const row = await env.DB.prepare('SELECT COUNT(*) AS count FROM projects').first<{ count: number }>();
+  const row = await env.DB.prepare('SELECT COUNT(*) AS count FROM projects WHERE published=1').first<{ count: number }>();
   return Number(row?.count || 0);
 }
 export async function getResumeSettings(): Promise<ResumeSettings> {

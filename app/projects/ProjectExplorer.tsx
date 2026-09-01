@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import type { Project } from '@/lib/content';
+import { toProjectSlug } from '@/lib/slug';
 
 function ProjectArtwork({ project, index }: { project: Project; index: number }) {
   const monogram = project.title.split(/\s+/).slice(0, 2).map((word) => word[0]).join('').toUpperCase();
@@ -26,8 +27,10 @@ export default function ProjectExplorer({ projects }: { projects: Project[] }) {
     <div className="project-showcase-grid">
       {projects.map((project, index) => {
         const tech = project.tech.split(',').map((item) => item.trim()).filter(Boolean).slice(0, 3);
+        const external = project.destination !== 'case_study';
+        const href = project.destination === 'live' ? project.projectUrl : project.destination === 'github' ? project.githubUrl : `/projects/${toProjectSlug(project.slug || project.title)}`;
         return <article className="project-showcase-card" key={project.id}>
-          <Link href={`/projects/${project.slug}`} aria-label={`View ${project.title} project`}>
+          <Link href={href || '#'} target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined} aria-label={`${external ? 'Open' : 'View'} ${project.title} project`}>
             <header className="project-showcase-meta">
               <span>{String(index + 1).padStart(2, '0')}</span>
               <b aria-hidden="true" />
@@ -40,7 +43,7 @@ export default function ProjectExplorer({ projects }: { projects: Project[] }) {
               <p>{project.summary}</p>
               <ul aria-label={`${project.title} technologies`}>{tech.map((item) => <li key={item}>{item}</li>)}</ul>
             </div>
-            <footer><span>View project</span><ArrowRight aria-hidden="true" /></footer>
+            <footer><span>{project.destination === 'live' ? 'Visit live project' : project.destination === 'github' ? 'View on GitHub' : 'View project'}</span><ArrowRight aria-hidden="true" /></footer>
           </Link>
         </article>;
       })}

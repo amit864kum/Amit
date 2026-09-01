@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { ensureContentTables } from '@/lib/content';
 import { ensureAnalyticsTables } from '@/lib/analytics';
+import { toProjectSlug } from '@/lib/slug';
 
 export type AdminCounts = {
   projects: number;
@@ -62,7 +63,7 @@ export async function getDashboardContent() {
     db.prepare('SELECT id,name,email,service,status,created_at AS createdAt FROM contact_messages ORDER BY created_at DESC LIMIT 4').all<DashboardEnquiry>(),
   ]);
   const content: DashboardContentItem[] = [
-    ...projectRows.results.map((item) => ({ id: item.id, title: item.title, meta: `${item.category} · ${item.year}`, kind: 'project' as const, href: `/projects/${item.slug}` })),
+    ...projectRows.results.map((item) => ({ id: item.id, title: item.title, meta: `${item.category} · ${item.year}`, kind: 'project' as const, href: `/projects/${toProjectSlug(item.slug || item.title)}` })),
     ...postRows.results.map((item) => ({ id: item.id, title: item.title, meta: `${item.category} · ${item.published ? 'Published' : 'Draft'}`, kind: 'post' as const, href: `/blog/${item.slug}` })),
   ].slice(0, 5);
   return { content, enquiries: enquiryRows.results };

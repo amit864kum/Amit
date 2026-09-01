@@ -8,6 +8,9 @@ import ScrollScene from '@/components/ScrollScene';
 import MagneticLink from '@/components/MagneticLink';
 import ScrollTicker from '@/components/ScrollTicker';
 import HomeSelectedWork from '@/components/HomeSelectedWork';
+import { getProjectCount, getProjects } from '@/lib/content';
+
+export const dynamic = 'force-dynamic';
 const services = [
   { title: 'Full-Stack Product Development', description: 'I turn product ideas into scalable web applications—from interface architecture to production-ready APIs.', skills: ['Product UI', 'Backend APIs', 'Databases'], icon: Box },
   { title: 'Blockchain Systems', description: 'I build permissioned networks, smart-contract workflows, and traceable platforms for real operational challenges.', skills: ['Hyperledger Fabric', 'Go chaincode', 'IPFS'], icon: Network },
@@ -90,7 +93,9 @@ function StackToolIcon({ tool }: { tool: StackTool }) {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const [projectCount, featuredProjects] = await Promise.all([getProjectCount(), getProjects(true)]);
+  const projectCountLabel = String(projectCount).padStart(2, '0');
   return (
     <main>
       <SiteHeader />
@@ -108,7 +113,7 @@ export default function Home() {
             <a href="mailto:amitkumarabhinav59@gmail.com" className="text-link">amitkumarabhinav59@gmail.com</a>
           </div>
           <div className="hero-proof" aria-label="Professional highlights">
-            <p><i aria-hidden="true"><Box /></i><span><strong>06+</strong><small>Products &amp; research<br />platforms shipped</small></span></p>
+            <p><i aria-hidden="true"><Box /></i><span><strong>{projectCountLabel}</strong><small>Projects &amp; research<br />platforms published</small></span></p>
             <p><i aria-hidden="true"><Code2 /></i><span><strong>04</strong><small>Engineering<br />disciplines</small></span></p>
             <p><i aria-hidden="true"><Landmark /></i><span><strong>IIT</strong><small>Patna research<br />experience</small></span></p>
           </div>
@@ -124,7 +129,7 @@ export default function Home() {
           </div>
           <figcaption className="portrait-profile">
             <div className="portrait-profile-focus"><span>Current focus <Target aria-hidden="true" /></span><strong>Building products<br />that earn trust.</strong><i aria-hidden="true" /></div>
-            <div className="portrait-build-card"><Box aria-hidden="true" /><span><strong>6+</strong><small>Builds shipped</small></span><i aria-hidden="true" /></div>
+            <div className="portrait-build-card"><Box aria-hidden="true" /><span><strong>{projectCountLabel}</strong><small>Projects published</small></span><i aria-hidden="true" /></div>
             <div className="portrait-role" aria-label="Core disciplines"><span>Full-stack</span><span>Blockchain</span><span>Applied AI</span></div>
           </figcaption>
         </figure>
@@ -189,7 +194,7 @@ export default function Home() {
         </div>
       </section>
 
-      <HomeSelectedWork />
+      <HomeSelectedWork projects={featuredProjects.slice(0, 3)} />
       <SiteFooter />
     </main>
   );

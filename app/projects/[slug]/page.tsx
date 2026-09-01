@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { ArrowLeft, ArrowUpRight, Code2, Layers3 } from 'lucide-react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
@@ -9,6 +9,8 @@ import MagneticLink from '@/components/MagneticLink';
 import ProjectCaseMediaMotion from '@/components/ProjectCaseMediaMotion';
 import { getProject, getProjects } from '@/lib/content';
 import { articleBlocks, blockSections } from '@/lib/blog';
+import { projectDetails } from '@/lib/project-details';
+import { decodePathSegment, toProjectSlug } from '@/lib/slug';
 
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ slug: string }> };
@@ -18,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!project) return { title: 'Project not found' };
   return {
     title: `${project.title} — Amit Kumar`, description: project.summary,
-    alternates: { canonical: `/projects/${project.slug}` },
+    alternates: { canonical: `/projects/${toProjectSlug(project.slug || project.title)}` },
     openGraph: { title: `${project.title} — Amit Kumar`, description: project.summary, images: project.imageUrl ? [{ url: project.imageUrl }] : [] },
     twitter: { card: 'summary_large_image', title: `${project.title} — Amit Kumar`, description: project.summary, images: project.imageUrl ? [project.imageUrl] : [] },
   };
@@ -30,12 +32,15 @@ function isGitHubUrl(value: string | null) {
 }
 
 export default async function ProjectPage({ params }: Props) {
-  const slug = (await params).slug;
+  const slug = decodePathSegment((await params).slug);
   const [project, projects] = await Promise.all([getProject(slug), getProjects()]);
   if (!project) notFound();
+  const canonicalSlug = toProjectSlug(project.slug || project.title);
+  if (slug !== canonicalSlug) redirect(`/projects/${canonicalSlug}`);
 
-  const position = Math.max(0, projects.findIndex((item) => item.id === project.id));
-  const nextProject = projects[(position + 1) % projects.length];
+  const caseStudies = projects.filter((item) => item.destination === 'case_study');
+  const position = Math.max(0, caseStudies.findIndex((item) => item.id === project.id));
+  const nextProject = caseStudies.length ? caseStudies[(position + 1) % caseStudies.length] : null;
   const tech = project.tech.split(',').map((item) => item.trim()).filter(Boolean);
   const paragraphs = project.body.split(/\n\s*\n/).map((item) => item.trim()).filter(Boolean);
   const contentBlocks = project.contentJson ? articleBlocks(project.contentJson, '') : [];
@@ -43,6 +48,9 @@ export default async function ProjectPage({ params }: Props) {
   const githubUrl = project.githubUrl || (isGitHubUrl(project.projectUrl) ? project.projectUrl : null);
   const liveUrl = project.projectUrl && !isGitHubUrl(project.projectUrl) ? project.projectUrl : null;
   const monogram = project.title.split(/\s+/).slice(0, 2).map((word) => word[0]).join('').toUpperCase();
+  const details = projectDetails(project.detailJson);
+  const systemSteps = details.systemSteps.filter((step) => step.label || step.title || step.description);
+  const principles = details.principles.filter((principle) => principle.title || principle.description);
 
   return <main className={`inner-page project-case-page${project.imageUrl ? ' has-project-media' : ' project-case-text-only'}`}>
     <SiteHeader solid />
@@ -66,12 +74,12 @@ export default async function ProjectPage({ params }: Props) {
     </section> : null}
 
     <section className="project-case-story" id="project-story">
-      <aside><span>01 / Context</span><h2>From complexity<br />to <em>clarity.</em></h2><p>A focused look at the thinking, architecture, and product decisions behind the work.</p></aside>
-      <article><p className="project-case-lead">{project.summary}</p><div className="project-case-prose">{paragraphs.map((paragraph, index) => <p key={`${project.id}-${index}`}>{paragraph}</p>)}</div><blockquote><span>Design intent</span><p>Make the system understandable at the interface, dependable underneath, and useful in the real workflow.</p></blockquote></article>
+      <aside><span>01 / Context</span>{details.contextHeading || details.contextAccent ? <h2>{details.contextHeading}{details.contextHeading && details.contextAccent ? <br /> : null}{details.contextAccent ? <em>{details.contextAccent}</em> : null}</h2> : null}{details.contextDescription ? <p>{details.contextDescription}</p> : null}</aside>
+      <article><p className="project-case-lead">{project.summary}</p><div className="project-case-prose">{paragraphs.map((paragraph, index) => <p key={`${project.id}-${index}`}>{paragraph}</p>)}</div>{details.designIntent ? <blockquote><span>Design intent</span><p>{details.designIntent}</p></blockquote> : null}</article>
     </section>
 
-    {contentSections.length ? <section className="project-case-walkthrough" aria-labelledby="walkthrough-title">
-      <header><div><span>02 / Walkthrough</span><h2 id="walkthrough-title">Inside the product,<br /><em>step by step.</em></h2></div><p>Detailed decisions, workflows, and interface views arranged in the order the project was designed to be understood.</p></header>
+    {contentSections.length ? <section className="project-case-walkthrough" aria-labelledby={details.walkthroughHeading || details.walkthroughAccent ? 'walkthrough-title' : undefined} aria-label={details.walkthroughHeading || details.walkthroughAccent ? undefined : 'Project walkthrough'}>
+      <header><div><span>02 / Walkthrough</span>{details.walkthroughHeading || details.walkthroughAccent ? <h2 id="walkthrough-title">{details.walkthroughHeading}{details.walkthroughHeading && details.walkthroughAccent ? <br /> : null}{details.walkthroughAccent ? <em>{details.walkthroughAccent}</em> : null}</h2> : null}</div>{details.walkthroughDescription ? <p>{details.walkthroughDescription}</p> : null}</header>
       <div className="project-walkthrough-sections">{contentSections.map((section, sectionIndex) => <article key={`${section.id}-${sectionIndex}`}>
         <header><span>{String(sectionIndex + 1).padStart(2, '0')}</span><h3>{section.heading}</h3></header>
         <div className="project-walkthrough-flow">{section.blocks.map((block) => {
@@ -82,32 +90,28 @@ export default async function ProjectPage({ params }: Props) {
       </article>)}</div>
     </section> : null}
 
-    <section className="project-case-system" aria-labelledby="system-title">
-      <header><div><span>{contentSections.length ? '03' : '02'} / System</span><h2 id="system-title">The build behind<br /><em>the experience.</em></h2></div><p>Technology was selected around the problem—not the trend—so every layer has a clear responsibility.</p></header>
+    <section className="project-case-system" aria-labelledby={details.systemHeading || details.systemAccent ? 'system-title' : undefined} aria-label={details.systemHeading || details.systemAccent ? undefined : 'Project system'}>
+      <header><div><span>{contentSections.length ? '03' : '02'} / System</span>{details.systemHeading || details.systemAccent ? <h2 id="system-title">{details.systemHeading}{details.systemHeading && details.systemAccent ? <br /> : null}{details.systemAccent ? <em>{details.systemAccent}</em> : null}</h2> : null}</div>{details.systemDescription ? <p>{details.systemDescription}</p> : null}</header>
       <div className="project-system-blueprint">
         <article className="project-system-path">
           <header><span>Delivery architecture</span><b>{monogram} / System</b></header>
-          <ol>
-            <li><span>01</span><div><small>Frame</small><h3>Define the real problem.</h3><p>Align the user need, technical constraints, and outcome before choosing the implementation.</p></div></li>
-            <li><span>02</span><div><small>Build</small><h3>Connect every layer.</h3><p>Shape the interface, application logic, and infrastructure as one understandable system.</p></div></li>
-            <li><span>03</span><div><small>Prove</small><h3>Validate the workflow.</h3><p>Test the complete path against real usage, edge cases, and dependable delivery.</p></div></li>
-          </ol>
+          {systemSteps.length ? <ol>{systemSteps.map((step, index) => <li key={`${step.label}-${index}`}><span>{String(index + 1).padStart(2, '0')}</span><div>{step.label ? <small>{step.label}</small> : null}{step.title ? <h3>{step.title}</h3> : null}{step.description ? <p>{step.description}</p> : null}</div></li>)}</ol> : null}
         </article>
         <aside className="project-system-stack" aria-label={`${project.title} technology stack`}>
           <header><Layers3 aria-hidden="true" /><span>Technology stack</span></header>
           <strong>{String(tech.length).padStart(2, '0')}<small>connected tools</small></strong>
           <ul>{tech.map((item, index) => <li key={item}><span>{String(index + 1).padStart(2, '0')}</span>{item}</li>)}</ul>
         </aside>
-        <article className="project-system-principles">
+        {principles.length ? <article className="project-system-principles">
           <header><span>Engineering principles</span><b>Designed to hold up beyond the demo</b></header>
-          <div><section><span>01</span><h3>Clarity first</h3><p>Technical depth becomes an interface people can confidently navigate.</p></section><section><span>02</span><h3>Systems thinking</h3><p>Product choices connect to dependable architecture and observable workflows.</p></section><section><span>03</span><h3>Built for reality</h3><p>The experience accounts for practical constraints, edge cases, and change.</p></section></div>
-        </article>
+          <div>{principles.map((principle, index) => <section key={`${principle.title}-${index}`}><span>{String(index + 1).padStart(2, '0')}</span>{principle.title ? <h3>{principle.title}</h3> : null}{principle.description ? <p>{principle.description}</p> : null}</section>)}</div>
+        </article> : null}
       </div>
     </section>
 
     <section className="project-case-close">
-      <div className="project-case-contact"><span>Have a complex product in mind?</span><h2>Let&apos;s make it<br /><em>clear, useful, and real.</em></h2><MagneticLink href="/contact" className="project-case-primary">Start a conversation <ArrowUpRight aria-hidden="true" /></MagneticLink></div>
-      {nextProject && nextProject.id !== project.id ? <Link className="project-case-next" href={`/projects/${nextProject.slug}`}><span>Next case study <b>{String(position + 2 > projects.length ? 1 : position + 2).padStart(2, '0')}</b></span><div><p>{nextProject.category} · {nextProject.year}</p><h2>{nextProject.title}</h2></div><ArrowUpRight aria-hidden="true" /></Link> : null}
+      {details.ctaHeading || details.ctaAccent ? <div className="project-case-contact">{details.ctaEyebrow ? <span>{details.ctaEyebrow}</span> : null}<h2>{details.ctaHeading}{details.ctaHeading && details.ctaAccent ? <br /> : null}{details.ctaAccent ? <em>{details.ctaAccent}</em> : null}</h2><MagneticLink href="/contact" className="project-case-primary">Start a conversation <ArrowUpRight aria-hidden="true" /></MagneticLink></div> : null}
+      {nextProject && nextProject.id !== project.id ? <Link className="project-case-next" href={`/projects/${toProjectSlug(nextProject.slug || nextProject.title)}`}><span>Next case study <b>{String(position + 2 > caseStudies.length ? 1 : position + 2).padStart(2, '0')}</b></span><div><p>{nextProject.category} · {nextProject.year}</p><h2>{nextProject.title}</h2></div><ArrowUpRight aria-hidden="true" /></Link> : null}
     </section>
     <SiteFooter />
   </main>;

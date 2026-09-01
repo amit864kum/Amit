@@ -15,12 +15,17 @@ export const projects = sqliteTable('projects', {
   projectUrl: text('project_url'),
   githubUrl: text('github_url'),
   featured: integer('featured').notNull().default(0),
+  destination: text('destination').notNull().default('case_study'),
+  published: integer('published').notNull().default(1),
+  showOnProjects: integer('show_on_projects').notNull().default(1),
+  detailJson: text('detail_json'),
   displayOrder: integer('display_order').notNull().default(0),
   createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   index('idx_projects_featured').on(table.featured),
   index('idx_projects_display_order').on(table.displayOrder),
+  index('idx_projects_public_order').on(table.published, table.showOnProjects, table.displayOrder),
 ]);
 export const posts = sqliteTable('posts', {
   id: integer('id').primaryKey({ autoIncrement: true }),

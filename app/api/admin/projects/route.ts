@@ -3,11 +3,14 @@ import { env } from 'cloudflare:workers';
 import { requireAdminApi } from '@/lib/admin';
 import { ensureContentTables } from '@/lib/content';
 import { articleBlocks } from '@/lib/blog';
+import { toProjectSlug } from '@/lib/slug';
+import { projectDetails, type ProjectDestination } from '@/lib/project-details';
 
 type ProjectPayload = {
   id?: number; slug: string; title: string; category: string; summary: string;
   body: string; contentJson?: string | null; tech: string; year: string; imageUrl?: string | null;
-  projectUrl?: string | null; githubUrl?: string | null; featured?: number;
+  projectUrl?: string | null; githubUrl?: string | null; featured?: number; destination?: ProjectDestination;
+  published?: number; showOnProjects?: number; detailJson?: string | null;
 };
 
 async function authorized() { await ensureContentTables(); return requireAdminApi(); }
@@ -27,30 +30,57 @@ function normalizeContent(value: string | null | undefined) {
   }
   return JSON.stringify(blocks);
 }
+function normalizeDetails(value: string | null | undefined) {
+  if (!value) return null;
+  const parsed = JSON.parse(value) as unknown;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Invalid project details');
+  return JSON.stringify(projectDetails(value));
+}
+function normalizeDestination(p: ProjectPayload): ProjectDestination {
+  const destination = p.destination || 'case_study';
+  if (!['case_study', 'live', 'github'].includes(destination)) throw new Error('Invalid project destination');
+  if (destination === 'live' && !p.projectUrl) throw new Error('A live URL is required');
+  if (destination === 'github' && !p.githubUrl) throw new Error('A GitHub URL is required');
+  return destination;
+}
 export async function POST(request: Request) {
   if (!await authorized()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const p = await request.json() as ProjectPayload;
-  let contentJson: string | null;
-  try { contentJson = normalizeContent(p.contentJson); }
+  let contentJson: string | null; let detailJson: string | null; let destination: ProjectDestination;
+  try { contentJson = normalizeContent(p.contentJson); detailJson = normalizeDetails(p.detailJson); destination = normalizeDestination(p); }
   catch { return NextResponse.json({ error: 'Invalid project content' }, { status: 400 }); }
+  const slug = toProjectSlug(p.slug || p.title);
+  if (!slug) return NextResponse.json({ error: 'A valid project title or slug is required' }, { status: 400 });
   const order = await env.DB.prepare('SELECT COALESCE(MAX(display_order), -1) + 1 AS nextOrder FROM projects').first<{ nextOrder: number }>();
-  await env.DB.prepare('INSERT INTO projects (slug,title,category,summary,body,content_json,tech,year,image_url,project_url,github_url,featured,display_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(p.slug,p.title,p.category,p.summary,p.body,contentJson,p.tech,p.year,p.imageUrl||null,p.projectUrl||null,p.githubUrl||null,p.featured?1:0,order?.nextOrder ?? 0).run();
+  try {
+    await env.DB.prepare('INSERT INTO projects (slug,title,category,summary,body,content_json,tech,year,image_url,project_url,github_url,featured,destination,published,show_on_projects,detail_json,display_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(slug,p.title,p.category,p.summary,p.body,contentJson,p.tech,p.year,p.imageUrl||null,p.projectUrl||null,p.githubUrl||null,p.featured?1:0,destination,p.published?1:0,p.showOnProjects?1:0,detailJson,order?.nextOrder ?? 0).run();
+  } catch (error) {
+    if (String(error).toLowerCase().includes('unique')) return NextResponse.json({ error: 'This project URL slug is already in use' }, { status: 409 });
+    throw error;
+  }
   return NextResponse.json({ ok: true });
 }
 export async function PATCH(request: Request) {
   if (!await authorized()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const p = await request.json() as ProjectPayload;
-  let contentJson: string | null;
+  let contentJson: string | null; let detailJson: string | null; let destination: ProjectDestination;
   try {
     if (p.contentJson === undefined) {
       const existing = await env.DB.prepare('SELECT content_json AS contentJson FROM projects WHERE id=?').bind(p.id).first<{ contentJson: string | null }>();
       contentJson = existing?.contentJson ?? null;
-    } else {
-      contentJson = normalizeContent(p.contentJson);
-    }
+    } else contentJson = normalizeContent(p.contentJson);
+    detailJson = normalizeDetails(p.detailJson);
+    destination = normalizeDestination(p);
   }
   catch { return NextResponse.json({ error: 'Invalid project content' }, { status: 400 }); }
-  await env.DB.prepare('UPDATE projects SET slug=?,title=?,category=?,summary=?,body=?,content_json=?,tech=?,year=?,image_url=?,project_url=?,github_url=?,featured=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(p.slug,p.title,p.category,p.summary,p.body,contentJson,p.tech,p.year,p.imageUrl||null,p.projectUrl||null,p.githubUrl||null,p.featured?1:0,p.id).run();
+  const slug = toProjectSlug(p.slug || p.title);
+  if (!slug) return NextResponse.json({ error: 'A valid project title or slug is required' }, { status: 400 });
+  try {
+    await env.DB.prepare('UPDATE projects SET slug=?,title=?,category=?,summary=?,body=?,content_json=?,tech=?,year=?,image_url=?,project_url=?,github_url=?,featured=?,destination=?,published=?,show_on_projects=?,detail_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(slug,p.title,p.category,p.summary,p.body,contentJson,p.tech,p.year,p.imageUrl||null,p.projectUrl||null,p.githubUrl||null,p.featured?1:0,destination,p.published?1:0,p.showOnProjects?1:0,detailJson,p.id).run();
+  } catch (error) {
+    if (String(error).toLowerCase().includes('unique')) return NextResponse.json({ error: 'This project URL slug is already in use' }, { status: 409 });
+    throw error;
+  }
   return NextResponse.json({ ok: true });
 }
 export async function DELETE(request: Request) {
