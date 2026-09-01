@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, ArrowUpRight, Code2, Layers3 } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Code2, Layers3, Maximize2 } from 'lucide-react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import MagneticLink from '@/components/MagneticLink';
@@ -90,7 +90,7 @@ export default async function ProjectPage({ params }: Props) {
         <header><span>{String(sectionIndex + 1).padStart(2, '0')}</span><h3>{section.heading}</h3></header>
         <div className="project-walkthrough-flow">{section.blocks.map((block) => {
           if (block.type === 'paragraph') return <p key={block.id}>{block.text}</p>;
-          if (block.type === 'image' && block.imageUrl) return <figure key={block.id}>{block.imageHeading ? <h4>{block.imageHeading}</h4> : null}<div className="project-walkthrough-image"><Image src={block.imageUrl} alt={block.alt || `${project.title} project screenshot`} fill sizes="(max-width: 800px) 94vw, (max-width: 1600px) 88vw, 1500px" loading="lazy" /></div>{block.imageDescription ? <figcaption>{block.imageDescription}</figcaption> : null}</figure>;
+          if (block.type === 'image' && block.imageUrl) return <figure key={block.id}>{block.imageHeading ? <h4>{block.imageHeading}</h4> : null}<div className="project-walkthrough-image"><a className="project-walkthrough-image-link" href={block.imageUrl} target="_blank" rel="noreferrer" aria-label={`Open ${block.alt || block.imageHeading || project.title} image at full resolution`}><Image src={block.imageUrl} alt={block.alt || `${project.title} project screenshot`} fill sizes="(max-width: 800px) 94vw, (max-width: 1600px) 88vw, 1500px" loading="lazy" /><span><Maximize2 aria-hidden="true" /> Open full image</span></a></div>{block.imageDescription ? <figcaption>{block.imageDescription}</figcaption> : null}</figure>;
           return null;
         })}</div>
       </article>)}</div>
