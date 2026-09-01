@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
-import { BarChart3, BookOpenText, BriefcaseBusiness, ExternalLink, Gauge, Inbox, LogOut, Menu, Settings2, X } from 'lucide-react';
+import { BarChart3, BookOpenText, BriefcaseBusiness, ExternalLink, FileUser, Gauge, Inbox, LogOut, Menu, Settings2, X } from 'lucide-react';
 import type { AdminCounts } from '@/lib/admin-data';
 
 const nav = [
   { href: '/admin', label: 'Dashboard', icon: Gauge, key: null },
   { href: '/admin/projects', label: 'Projects', icon: BriefcaseBusiness, key: 'projects' as const },
+  { href: '/admin/resume', label: 'Resume', icon: FileUser, key: null },
   { href: '/admin/blog', label: 'Blog', icon: BookOpenText, key: 'posts' as const },
   { href: '/admin/enquiries', label: 'Enquiries', icon: Inbox, key: 'newEnquiries' as const },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3, key: 'visitors' as const },

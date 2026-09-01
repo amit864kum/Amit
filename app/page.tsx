@@ -1,18 +1,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowUpRight, BookOpen, Box, BrainCircuit, Cloud, Network, type LucideIcon } from 'lucide-react';
+import { ArrowUpRight, BookOpen, Box, BrainCircuit, Cloud, Code2, Landmark, Network, Target, type LucideIcon } from 'lucide-react';
 import { brandIcons, hyperledgerFabricLogo, type BrandMark } from '@/lib/brand-icons';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import ScrollScene from '@/components/ScrollScene';
 import MagneticLink from '@/components/MagneticLink';
 import ScrollTicker from '@/components/ScrollTicker';
-
-const projects = [
-  { number: '01', slug: 'sugarcane-supply-chain', title: 'Sugarcane Supply Chain', type: 'Blockchain / Research' },
-  { number: '02', slug: 'photo-finder', title: 'PhotoFinder', type: 'AI / Full-stack platform' },
-  { number: '03', slug: 'fedchain', title: 'FedChain', type: 'Distributed systems / Research' },
-];
+import HomeSelectedWork from '@/components/HomeSelectedWork';
 const services = [
   { title: 'Full-Stack Product Development', description: 'I turn product ideas into scalable web applications—from interface architecture to production-ready APIs.', skills: ['Product UI', 'Backend APIs', 'Databases'], icon: Box },
   { title: 'Blockchain Systems', description: 'I build permissioned networks, smart-contract workflows, and traceable platforms for real operational challenges.', skills: ['Hyperledger Fabric', 'Go chaincode', 'IPFS'], icon: Network },
@@ -112,19 +107,27 @@ export default function Home() {
             <MagneticLink href="/projects" className="button button-primary">Explore my work <span>↗</span></MagneticLink>
             <a href="mailto:amitkumarabhinav59@gmail.com" className="text-link">amitkumarabhinav59@gmail.com</a>
           </div>
-          <div className="hero-proof" aria-label="Professional highlights"><p><strong>06+</strong><span>Products and research<br />platforms shipped</span></p><p><strong>04</strong><span>Engineering<br />disciplines</span></p><p><strong>IIT</strong><span>Patna research<br />experience</span></p></div>
+          <div className="hero-proof" aria-label="Professional highlights">
+            <p><i aria-hidden="true"><Box /></i><span><strong>06+</strong><small>Products &amp; research<br />platforms shipped</small></span></p>
+            <p><i aria-hidden="true"><Code2 /></i><span><strong>04</strong><small>Engineering<br />disciplines</small></span></p>
+            <p><i aria-hidden="true"><Landmark /></i><span><strong>IIT</strong><small>Patna research<br />experience</small></span></p>
+          </div>
         </div>
 
-        <div className="portrait-wrap" aria-label="Portrait of Amit Kumar">
-          <div className="portrait-orbit orbit-one" />
-          <div className="portrait-orbit orbit-two" />
-          <div className="portrait-card">
-            <Image src="/amit-kumar.jpeg" alt="Amit Kumar in a black suit" fill sizes="(max-width: 800px) 86vw, 36vw" priority />
+        <figure className="portrait-wrap">
+          <div className="portrait-visual">
+            <div className="portrait-orbit orbit-one" aria-hidden="true" />
+            <div className="portrait-orbit orbit-two" aria-hidden="true" />
+            <div className="portrait-card">
+              <Image src="/amit-kumar.jpeg" alt="Amit Kumar in a black suit" fill sizes="(max-width: 800px) 86vw, 36vw" priority />
+            </div>
           </div>
-          <div className="portrait-glass-note"><span>Current focus</span><strong>Building products<br />that earn trust.</strong></div>
-          <div className="portrait-role" aria-hidden="true"><span>Full-stack</span><span>Blockchain</span><span>Applied AI</span></div>
-          <div className="experience-badge"><strong>6+</strong><span>Professional<br />builds shipped</span></div>
-        </div>
+          <figcaption className="portrait-profile">
+            <div className="portrait-profile-focus"><span>Current focus <Target aria-hidden="true" /></span><strong>Building products<br />that earn trust.</strong><i aria-hidden="true" /></div>
+            <div className="portrait-build-card"><Box aria-hidden="true" /><span><strong>6+</strong><small>Builds shipped</small></span><i aria-hidden="true" /></div>
+            <div className="portrait-role" aria-label="Core disciplines"><span>Full-stack</span><span>Blockchain</span><span>Applied AI</span></div>
+          </figcaption>
+        </figure>
       </ScrollScene>
 
       <ScrollTicker items={['Full-stack systems', 'Blockchain products', 'Applied AI', 'Product experience', 'Cloud delivery']} />
@@ -186,29 +189,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="selected-work" aria-labelledby="selected-work-heading">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Selected work</p>
-            <h2 id="selected-work-heading">Built to solve.<br /><em>Designed to last.</em></h2>
-          </div>
-          <p>Research-led platforms, intelligent tools, and resilient digital infrastructure.</p>
-        </div>
-
-        <div className="project-grid">
-          {projects.map((project) => (
-            <Link href={`/projects/${project.slug}`} className="project-card" key={project.number}>
-              <div className="project-visual">
-                <span className="project-number">{project.number}</span>
-                <span className="project-placeholder">Project imagery<br />managed in CMS</span>
-                <span className="project-arrow">↗</span>
-              </div>
-              <p>{project.type}</p>
-              <h3>{project.title}</h3>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <HomeSelectedWork />
       <SiteFooter />
     </main>
   );

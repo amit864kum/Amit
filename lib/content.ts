@@ -10,6 +10,12 @@ export type Post = {
   contentJson: string | null; category: string; imageUrl: string | null; featured: number;
   publishedAt: string; published: number;
 };
+export type ResumeSettings = {
+  resumeUrl: string;
+  fileName: string;
+  buttonLabel: string;
+  updatedAt: string;
+};
 
 const seedProjects = [
   ['sugarcane-supply-chain', 'Sugarcane Supply Chain', 'Blockchain / Research', 'A secure multi-organization agricultural supply chain with procurement, logistics, payment automation, IoT monitoring, and QR traceability.', 'Research project developed with IIT Patna to make agricultural movement transparent from field to payment. The system combines permissioned blockchain workflows with verifiable records and practical interfaces for every participant.', 'Hyperledger Fabric, Go, CouchDB, IPFS, Docker, JWT', '2026', 'https://github.com/amit864kum/Sugarcane-Supply-Chain-Management', 1],
@@ -55,6 +61,13 @@ async function initializeContentTables() {
       service TEXT NOT NULL, budget TEXT, message TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, status TEXT NOT NULL DEFAULT 'new'
     )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS resume_settings (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      resume_url TEXT NOT NULL DEFAULT '/resume-amit-kumar.pdf',
+      file_name TEXT NOT NULL DEFAULT 'resume-amit-kumar.pdf',
+      button_label TEXT NOT NULL DEFAULT 'Download résumé',
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
     db.prepare('CREATE INDEX IF NOT EXISTS idx_projects_featured ON projects(featured)'),
     db.prepare('CREATE INDEX IF NOT EXISTS idx_posts_published_date ON posts(published, published_at)'),
     db.prepare('CREATE INDEX IF NOT EXISTS idx_messages_status_date ON contact_messages(status, created_at)'),
@@ -83,6 +96,8 @@ async function initializeContentTables() {
     )`).run();
   }
   await db.prepare('CREATE INDEX IF NOT EXISTS idx_projects_display_order ON projects(display_order)').run();
+  await db.prepare(`INSERT OR IGNORE INTO resume_settings (id,resume_url,file_name,button_label)
+    VALUES (1,'/resume-amit-kumar.pdf','resume-amit-kumar.pdf','Download résumé')`).run();
   const projectCount = await db.prepare('SELECT COUNT(*) AS count FROM projects').first<{ count: number }>();
   if (!projectCount?.count) {
     await db.batch(seedProjects.map((p, index) => db.prepare(
@@ -112,6 +127,22 @@ export async function getProjects(featuredOnly = false): Promise<Project[]> {
 export async function getProject(slug: string): Promise<Project | null> {
   await ensureContentTables();
   return env.DB.prepare('SELECT id,slug,title,category,summary,body,content_json AS contentJson,tech,year,image_url AS imageUrl,project_url AS projectUrl,github_url AS githubUrl,featured,display_order AS displayOrder FROM projects WHERE slug = ?').bind(slug).first<Project>();
+}
+export async function getProjectCount(): Promise<number> {
+  await ensureContentTables();
+  const row = await env.DB.prepare('SELECT COUNT(*) AS count FROM projects').first<{ count: number }>();
+  return Number(row?.count || 0);
+}
+export async function getResumeSettings(): Promise<ResumeSettings> {
+  await ensureContentTables();
+  const row = await env.DB.prepare(`SELECT resume_url AS resumeUrl,file_name AS fileName,
+    button_label AS buttonLabel,updated_at AS updatedAt FROM resume_settings WHERE id=1`).first<ResumeSettings>();
+  return row || {
+    resumeUrl: '/resume-amit-kumar.pdf',
+    fileName: 'resume-amit-kumar.pdf',
+    buttonLabel: 'Download résumé',
+    updatedAt: '',
+  };
 }
 export async function getPosts(includeDrafts = false): Promise<Post[]> {
   await ensureContentTables();

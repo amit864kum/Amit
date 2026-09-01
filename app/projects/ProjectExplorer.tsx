@@ -1,44 +1,46 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import type { Project } from '@/lib/content';
 
 function ProjectArtwork({ project, index }: { project: Project; index: number }) {
   const monogram = project.title.split(/\s+/).slice(0, 2).map((word) => word[0]).join('').toUpperCase();
   return <div className={`project-showcase-art tone-${(index % 3) + 1}`}>
-    {project.imageUrl ? <Image src={project.imageUrl} alt="" fill sizes="(max-width: 760px) 100vw, 58vw" /> : <div className="project-showcase-monogram"><span>{monogram}</span><i /></div>}
-    <div className="project-showcase-art-top"><span>{String(index + 1).padStart(2, '0')}</span><b>{project.year}</b></div>
+    {project.imageUrl ? <Image src={project.imageUrl} alt={`${project.title} project preview`} fill sizes="(max-width: 640px) 92vw, (max-width: 1020px) 44vw, (max-width: 1380px) 30vw, 22vw" /> : <div className="project-showcase-monogram"><span>{monogram}</span><i /></div>}
   </div>;
 }
 
 export default function ProjectExplorer({ projects }: { projects: Project[] }) {
   return <section className="project-showcase" aria-labelledby="projects-showcase-title">
     <header className="project-showcase-heading">
-      <div>
-        <p>Case studies</p>
+      <div className="project-showcase-heading-main">
+        <p><span aria-hidden="true" />Case studies</p>
         <h2 id="projects-showcase-title">Selected <em>projects</em></h2>
+        <i aria-hidden="true" />
+        <p>A selection of research-backed systems and digital products I&apos;ve designed and built to solve meaningful problems and deliver measurable impact.</p>
       </div>
-      <div className="project-showcase-heading-note">
-        <span>{String(projects.length).padStart(2, '0')} / total</span>
-        <p>Research-led systems and digital products shaped around meaningful problems, clear decisions, and dependable outcomes.</p>
-      </div>
+      <p className="project-showcase-heading-note">Building secure, scalable, and intuitive solutions across blockchain, AI/ML, and data-driven platforms.</p>
+      <div className="project-showcase-orbit" aria-hidden="true"><Sparkles /><i /><b /></div>
     </header>
 
     <div className="project-showcase-grid">
       {projects.map((project, index) => {
         const tech = project.tech.split(',').map((item) => item.trim()).filter(Boolean).slice(0, 3);
         return <article className="project-showcase-card" key={project.id}>
-          <Link href={`/projects/${project.slug}`}>
+          <Link href={`/projects/${project.slug}`} aria-label={`View ${project.title} project`}>
+            <header className="project-showcase-meta">
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <b aria-hidden="true" />
+              <p>{project.category}</p>
+              <time dateTime={project.year}>{project.year}</time>
+            </header>
             <ProjectArtwork project={project} index={index} />
             <div className="project-showcase-copy">
-              <div className="project-showcase-meta"><span>{project.category}</span><time>{project.year}</time></div>
               <h3>{project.title}</h3>
               <p>{project.summary}</p>
-              <footer>
-                <ul>{tech.map((item) => <li key={item}>{item}</li>)}</ul>
-                <span>View case study <ArrowUpRight aria-hidden="true" /></span>
-              </footer>
+              <ul aria-label={`${project.title} technologies`}>{tech.map((item) => <li key={item}>{item}</li>)}</ul>
             </div>
+            <footer><span>View project</span><ArrowRight aria-hidden="true" /></footer>
           </Link>
         </article>;
       })}

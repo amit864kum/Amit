@@ -79,6 +79,14 @@ export const consentDaily = sqliteTable('consent_daily', {
   updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const resumeSettings = sqliteTable('resume_settings', {
+  id: integer('id').primaryKey(),
+  resumeUrl: text('resume_url').notNull().default('/resume-amit-kumar.pdf'),
+  fileName: text('file_name').notNull().default('resume-amit-kumar.pdf'),
+  buttonLabel: text('button_label').notNull().default('Download résumé'),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const adminSecurity = sqliteTable('admin_security', {
   username: text('username').primaryKey(),
   passwordHash: text('password_hash').notNull(),

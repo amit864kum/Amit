@@ -1,15 +1,11 @@
 import Image from 'next/image';
+import { Bookmark, Boxes, BookOpen, Code2, Download, DraftingCompass, Landmark, Link2, Rocket, Sparkles, UserRound } from 'lucide-react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import ScrollScene from '@/components/ScrollScene';
 import ScrollDepthCards from '@/components/ScrollDepthCards';
-
-const disciplines = [
-  { number: '01', title: 'Build', statement: 'Product engineering from interface to database.', tools: ['React', 'Next.js', 'TypeScript', 'Node.js', 'PostgreSQL'] },
-  { number: '02', title: 'Explore', statement: 'Research-led systems that test ambitious ideas.', tools: ['Python', 'PyTorch', 'Federated Learning', 'Computer Vision', 'P2P'] },
-  { number: '03', title: 'Trust', statement: 'Traceable infrastructure for high-stakes workflows.', tools: ['Hyperledger Fabric', 'Go', 'CouchDB', 'IPFS', 'Smart Contracts'] },
-  { number: '04', title: 'Ship', statement: 'Reliable delivery across modern cloud environments.', tools: ['Docker', 'AWS', 'Cloudflare', 'Git', 'GitHub'] },
-];
+import TechnicalPractice from '@/components/TechnicalPractice';
+import { getProjectCount, getResumeSettings } from '@/lib/content';
 const experience = [
   { year: '2026', company: 'Museiac', role: 'Full-Stack Developer', summary: 'Building a scalable music platform through typed product interfaces, optimized APIs, and dependable data systems.', focus: ['Next.js', 'Node.js', 'PostgreSQL'] },
   { year: '2025', company: 'IIT Patna — Wireless Communication Research Lab', role: 'Web Developer', summary: 'Designed and deployed an academic platform that makes 5G/6G research, publications, people, and laboratory infrastructure easier to navigate.', focus: ['Research UX', 'Next.js', 'Deployment'] },
@@ -17,7 +13,11 @@ const experience = [
   { year: '2024', company: 'IIT Patna — Mechanical Engineering', role: 'Web Development Intern', summary: 'Translated institutional requirements into a clear, responsive digital experience for an academic department.', focus: ['Frontend', 'Information Design', 'Accessibility'] },
 ];
 
-export default function AboutPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function AboutPage() {
+  const [projectCount, resume] = await Promise.all([getProjectCount(), getResumeSettings()]);
+  const projectCountLabel = String(projectCount).padStart(2, '0');
   return (
     <main className="inner-page">
       <SiteHeader solid />
@@ -27,27 +27,50 @@ export default function AboutPage() {
           <div className="about-portrait-scene">
             <div className="portrait-plane portrait-plane-back" /><div className="portrait-plane portrait-plane-mid" />
             <figure><Image src="/amit-kumar.jpeg" alt="Amit Kumar" fill sizes="(max-width: 800px) 92vw, 44vw" priority /></figure>
-            <span className="portrait-coordinate">25.5941° N / 85.1376° E</span>
+            <div className="about-portrait-dots" aria-hidden="true" />
           </div>
           <div className="about-landing-copy">
-            <div className="about-landing-top"><p>About / 001</p><span>Engineer · Researcher · Builder</span></div>
-            <h1>Developer<br />by <em>craft.</em><span>Researcher by instinct.</span></h1>
-            <div className="about-landing-bottom"><p>I build useful digital products at the intersection of full-stack engineering, distributed systems, and applied intelligence.</p><span>Scroll to explore ↓</span></div>
-            <div className="about-signals" aria-label="Professional highlights"><p><strong>04</strong><span>Engineering<br />disciplines</span></p><p><strong>IIT</strong><span>Research<br />experience</span></p><p><strong>06+</strong><span>Products<br />shipped</span></p></div>
+            <div className="about-hero-message">
+              <h1><span>Developer</span><span>by <em>craft.</em></span><small>Researcher by instinct.</small></h1>
+              <i className="about-hero-rule" aria-hidden="true" />
+              <p>I build useful digital products at the intersection of full-stack engineering, distributed systems, and applied intelligence.</p>
+            </div>
+            <div className="about-signals" aria-label="Professional highlights">
+              <p><i><DraftingCompass aria-hidden="true" /></i><span><strong>04</strong><small>Engineering<br />disciplines</small></span></p>
+              <p><i><Landmark aria-hidden="true" /></i><span><strong>IIT</strong><small>Research<br />experience</small></span></p>
+              <p><i><Rocket aria-hidden="true" /></i><span><strong>{projectCountLabel}</strong><small>Projects<br />published</small></span></p>
+            </div>
           </div>
         </div>
       </ScrollScene>
 
-      <section className="about-story">
-        <p className="large-copy">I&apos;m a computer science undergraduate and full-stack developer with research experience at IIT Patna. I turn ambitious ideas into clear, scalable digital products.</p>
-        <div><p>My work sits at the intersection of software engineering, distributed systems, applied AI, and thoughtful interface design. I enjoy solving complex infrastructure problems without passing that complexity on to the user.</p><p>From academic portals and event platforms to blockchain supply chains and federated learning, I care about systems that are useful, resilient, and built with intent.</p><a className="button button-primary" href="/resume-amit-kumar.pdf" download>Download résumé ↓</a></div>
+      <section className="about-profile" aria-labelledby="about-profile-heading">
+        <div className="about-profile-grid" aria-hidden="true" />
+        <div className="about-profile-orbits" aria-hidden="true"><i /><i /><i /></div>
+        <div className="about-profile-intro">
+          <p className="about-profile-kicker"><span>About me</span><i /></p>
+          <h2 id="about-profile-heading">I&apos;m a computer science<br />undergraduate and<br />full-stack developer with<br />research experience at<br />IIT Patna.</h2>
+          <div className="about-profile-promise"><Sparkles aria-hidden="true" /><i /><p>I turn ambitious ideas into<br />clear, scalable digital products.</p></div>
+        </div>
+
+        <article className="about-profile-card">
+          <div className="about-profile-card-body">
+            <header><span><UserRound aria-hidden="true" /></span><h3>Who I am</h3></header>
+            <div className="about-profile-copy"><p>My work sits at the intersection of software engineering, distributed systems, applied AI, and thoughtful interface design. I enjoy solving complex infrastructure problems without passing that complexity on to the user.</p><p>From academic portals and event platforms to blockchain supply chains and federated learning, I care about systems that are useful, resilient, and built with intent.</p></div>
+            <ul className="about-profile-skills" aria-label="Core areas of expertise">
+              <li><Code2 aria-hidden="true" />Full-stack</li>
+              <li><Boxes aria-hidden="true" />Distributed Systems</li>
+              <li><Sparkles aria-hidden="true" />Applied AI</li>
+              <li><Link2 aria-hidden="true" />Blockchain</li>
+              <li><BookOpen aria-hidden="true" />Research-driven</li>
+            </ul>
+            <div className="about-profile-actions"><a href={resume.resumeUrl} download><Download aria-hidden="true" />{resume.buttonLabel}</a><span><i />Available for collaborations</span></div>
+          </div>
+          <footer><Bookmark aria-hidden="true" /><p>Research <i /> Product Engineering <i /> Impact</p></footer>
+        </article>
       </section>
 
-      <section className="about-toolkit" aria-labelledby="about-toolkit-heading">
-        <div className="about-toolkit-heading"><p className="eyebrow">Technical practice</p><h2 id="about-toolkit-heading">A toolkit shaped by<br /><em>what the work demands.</em></h2><p>I move comfortably between product engineering, applied research, distributed trust, and production delivery.</p></div>
-        <div className="discipline-grid">{disciplines.map((discipline) => <article className="discipline-card" key={discipline.title}><header><span>{discipline.number}</span><b>{discipline.title}</b></header><p>{discipline.statement}</p><ul>{discipline.tools.map((tool) => <li key={tool}>{tool}</li>)}</ul></article>)}</div>
-        <div className="toolkit-marquee" aria-label="Core technologies"><span>Next.js</span><i>◆</i><span>Hyperledger</span><i>◆</i><span>PyTorch</span><i>◆</i><span>Docker</span><i>◆</i><span>PostgreSQL</span></div>
-      </section>
+      <TechnicalPractice />
 
       <section className="experience-section" aria-labelledby="experience-heading">
         <div className="experience-intro"><p className="eyebrow">Experience</p><h2 id="experience-heading">Learning by<br /><em>building forward.</em></h2><p>A career shaped by product ownership, academic research, and systems that solve tangible problems.</p><span>2024 — Present</span></div>
