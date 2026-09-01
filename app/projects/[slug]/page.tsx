@@ -97,20 +97,27 @@ export default async function ProjectPage({ params }: Props) {
     </section> : null}
 
     <section className="project-case-system" aria-labelledby={details.systemHeading || details.systemAccent ? 'system-title' : undefined} aria-label={details.systemHeading || details.systemAccent ? undefined : 'Project system'}>
-      <header><div><span>{contentSections.length ? '03' : '02'} / System</span>{details.systemHeading || details.systemAccent ? <h2 id="system-title">{details.systemHeading}{details.systemHeading && details.systemAccent ? <br /> : null}{details.systemAccent ? <em>{details.systemAccent}</em> : null}</h2> : null}</div>{details.systemDescription ? <p>{details.systemDescription}</p> : null}</header>
-      <div className="project-system-blueprint">
-        <article className="project-system-path">
-          <header><span>Delivery architecture</span><b>{monogram} / System</b></header>
-          {systemSteps.length ? <ol>{systemSteps.map((step, index) => <li key={`${step.label}-${index}`}><span>{String(index + 1).padStart(2, '0')}</span><div>{step.label ? <small>{step.label}</small> : null}{step.title ? <h3>{step.title}</h3> : null}{step.description ? <p>{step.description}</p> : null}</div></li>)}</ol> : null}
-        </article>
+      <header className="project-system-heading">
+        <div className="project-system-kicker"><span>{contentSections.length ? '03' : '02'}</span><b>System</b></div>
+        <div>{details.systemHeading || details.systemAccent ? <h2 id="system-title">{details.systemHeading}{details.systemHeading && details.systemAccent ? <br /> : null}{details.systemAccent ? <em>{details.systemAccent}</em> : null}</h2> : null}</div>
+        {details.systemDescription ? <p>{details.systemDescription}</p> : null}
+      </header>
+      <div className={`project-system-blueprint${systemSteps.length ? '' : ' is-stack-only'}`}>
+        {systemSteps.length ? <article className="project-system-path">
+          <header><div><span>Delivery architecture</span><p>From foundation to finished experience</p></div><b>{monogram} / System map</b></header>
+          <ol>{systemSteps.map((step, index) => <li key={`${step.label}-${index}`}>
+            <div className="project-system-node"><span>{String(index + 1).padStart(2, '0')}</span><i aria-hidden="true" /></div>
+            <div className="project-system-step-copy">{step.label ? <small>{step.label}</small> : null}{step.title ? <h3>{step.title}</h3> : null}{step.description ? <p>{step.description}</p> : null}</div>
+          </li>)}</ol>
+        </article> : null}
         <aside className="project-system-stack" aria-label={`${project.title} technology stack`}>
-          <header><Layers3 aria-hidden="true" /><span>Technology stack</span></header>
-          <strong>{String(tech.length).padStart(2, '0')}<small>connected tools</small></strong>
-          <ul>{tech.map((item, index) => <li key={item}><span>{String(index + 1).padStart(2, '0')}</span>{item}</li>)}</ul>
+          <header><div><Layers3 aria-hidden="true" /><span>Technology stack</span></div><b>{String(tech.length).padStart(2, '0')}</b></header>
+          <p>Tools connected across the build.</p>
+          <ul>{tech.map((item, index) => <li key={item}><span>{String(index + 1).padStart(2, '0')}</span><b>{item}</b></li>)}</ul>
         </aside>
         {principles.length ? <article className="project-system-principles">
-          <header><span>Engineering principles</span><b>Designed to hold up beyond the demo</b></header>
-          <div>{principles.map((principle, index) => <section key={`${principle.title}-${index}`}><span>{String(index + 1).padStart(2, '0')}</span>{principle.title ? <h3>{principle.title}</h3> : null}{principle.description ? <p>{principle.description}</p> : null}</section>)}</div>
+          <header><div><span>Engineering principles</span><p>Decisions that keep the system dependable.</p></div><b>Built beyond the demo</b></header>
+          <div>{principles.map((principle, index) => <section key={`${principle.title}-${index}`}><div><span>{String(index + 1).padStart(2, '0')}</span><i aria-hidden="true" /></div>{principle.title ? <h3>{principle.title}</h3> : null}{principle.description ? <p>{principle.description}</p> : null}</section>)}</div>
         </article> : null}
       </div>
     </section>
