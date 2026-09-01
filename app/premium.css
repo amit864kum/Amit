@@ -2145,6 +2145,7 @@ html[data-theme='light'] .home-selected-work{
   padding:clamp(32px,3.4vw,50px) clamp(22px,2.5vw,38px) 4px 0;
   border:0;
 }
+.project-system-path li::after{content:none!important}
 .project-system-path li+li{
   padding-left:clamp(22px,2.5vw,38px);
   border-left:1px solid var(--line);
