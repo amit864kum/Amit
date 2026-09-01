@@ -90,7 +90,7 @@ export default async function ProjectPage({ params }: Props) {
         <header><span>{String(sectionIndex + 1).padStart(2, '0')}</span><h3>{section.heading}</h3></header>
         <div className="project-walkthrough-flow">{section.blocks.map((block) => {
           if (block.type === 'paragraph') return <p key={block.id}>{block.text}</p>;
-          if (block.type === 'image' && block.imageUrl) return <figure key={block.id}>{block.imageHeading ? <h4>{block.imageHeading}</h4> : null}<div className="project-walkthrough-image"><Image src={block.imageUrl} alt={block.alt || `${project.title} project screenshot`} fill sizes="(max-width: 800px) 94vw, 980px" loading="lazy" /></div>{block.imageDescription ? <figcaption>{block.imageDescription}</figcaption> : null}</figure>;
+          if (block.type === 'image' && block.imageUrl) return <figure key={block.id}>{block.imageHeading ? <h4>{block.imageHeading}</h4> : null}<div className="project-walkthrough-image"><Image src={block.imageUrl} alt={block.alt || `${project.title} project screenshot`} fill sizes="(max-width: 800px) 94vw, (max-width: 1600px) 88vw, 1500px" loading="lazy" /></div>{block.imageDescription ? <figcaption>{block.imageDescription}</figcaption> : null}</figure>;
           return null;
         })}</div>
       </article>)}</div>
