@@ -59,12 +59,18 @@ export default async function ProjectPage({ params }: Props) {
       <Link className="project-case-back" href="/projects"><ArrowLeft aria-hidden="true" /> All projects</Link>
       <div className="project-case-hero-grid">
         <div className="project-case-intro">
+          <div className="project-case-meta"><span>{project.category}</span><time dateTime={project.year}>{project.year}</time></div>
           <h1 id="project-title">{project.title}</h1><p className="project-case-deck">{project.summary}</p>
           {(liveUrl || githubUrl) ? <div className="project-case-actions">
             {liveUrl ? <a className="project-case-primary" href={liveUrl} target="_blank" rel="noreferrer">Visit live project <ArrowUpRight aria-hidden="true" /></a> : null}
             {githubUrl ? <a className="project-case-secondary" href={githubUrl} target="_blank" rel="noreferrer"><Code2 aria-hidden="true" /> View source</a> : null}
           </div> : null}
         </div>
+        <aside className="project-case-hero-visual" aria-label={`${project.title} project overview`}>
+          <header><span>AK / Project system</span><b>{project.year}</b></header>
+          <div className="project-case-hero-mark" aria-hidden="true"><i /><i /><span>{monogram}</span></div>
+          <footer><p>Built across</p><ul>{tech.slice(0, 4).map((item) => <li key={item}>{item}</li>)}</ul></footer>
+        </aside>
       </div>
     </section>
 
