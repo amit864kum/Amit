@@ -2325,3 +2325,32 @@ html[data-theme='light'] .home-selected-work{
   .project-system-node>span,.project-system-stack li{transition:none}
   .project-system-path li:hover .project-system-node>span,.project-system-stack li:hover{transform:none}
 }
+
+/* Preserve complete project artwork across listing and case-study media. */
+.projects-index-page .project-showcase-art{
+  background-color:color-mix(in srgb,var(--surface) 88%,var(--paper));
+}
+.projects-index-page .project-showcase-art img{
+  padding:clamp(10px,1.15vw,18px);
+  object-fit:contain;
+  object-position:center;
+}
+.projects-index-page .project-showcase-card>a:hover .project-showcase-art img{
+  transform:none;
+  filter:saturate(1.04) contrast(1.01);
+}
+.project-case-page .project-case-image,
+.project-case-page .project-walkthrough-image{
+  background:color-mix(in srgb,var(--surface) 86%,var(--paper));
+}
+.project-case-page .project-case-image img,
+.project-case-page .project-walkthrough-image img{
+  padding:clamp(8px,1vw,16px);
+  object-fit:contain;
+  object-position:center;
+}
+@media(max-width:720px){
+  .projects-index-page .project-showcase-art img,
+  .project-case-page .project-case-image img,
+  .project-case-page .project-walkthrough-image img{padding:8px}
+}
