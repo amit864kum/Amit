@@ -18,7 +18,7 @@ export function timingSafeEqual(left: Uint8Array, right: Uint8Array) {
 }
 
 export async function hashPassword(password: string) {
-  const iterations = 100_000;
+  const iterations = 600_000;
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
   const derived = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations }, key, 256);
@@ -29,12 +29,17 @@ export async function verifyPassword(password: string, storedHash: string) {
   const [algorithm, iterationText, saltText, expectedText] = storedHash.split('$');
   if (algorithm !== 'pbkdf2_sha256') return false;
   const iterations = Number(iterationText);
-  if (!Number.isSafeInteger(iterations) || iterations < 100_000 || iterations > 100_000) return false;
+  if (!Number.isSafeInteger(iterations) || iterations < 100_000 || iterations > 1_200_000) return false;
   try {
     const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
     const derived = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: fromBase64Url(saltText), iterations }, key, 256);
     return timingSafeEqual(new Uint8Array(derived), fromBase64Url(expectedText));
   } catch { return false; }
+}
+
+export function passwordHashNeedsUpgrade(storedHash: string) {
+  const [algorithm, iterationText] = storedHash.split('$');
+  return algorithm !== 'pbkdf2_sha256' || Number(iterationText) < 600_000;
 }
 
 export async function hmacValue(secret: string, value: string) {

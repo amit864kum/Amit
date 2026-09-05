@@ -12,6 +12,8 @@ import { getProject, getProjects } from '@/lib/content';
 import { articleBlocks, blockSections } from '@/lib/blog';
 import { projectDetails } from '@/lib/project-details';
 import { decodePathSegment, toProjectSlug } from '@/lib/slug';
+import StructuredData from '@/components/StructuredData';
+import { absoluteUrl, siteConfig } from '@/lib/site-config';
 
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ slug: string }> };
@@ -22,7 +24,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${project.title} — Amit Kumar`, description: project.summary,
     alternates: { canonical: `/projects/${toProjectSlug(project.slug || project.title)}` },
-    openGraph: { title: `${project.title} — Amit Kumar`, description: project.summary, images: project.imageUrl ? [{ url: project.imageUrl }] : [] },
+    keywords: [project.title, ...project.tech.split(',').map((item) => item.trim()), 'Amit Kumar portfolio', 'full-stack developer in Patna'],
+    authors: [{ name: siteConfig.name, url: '/' }],
+    openGraph: { title: `${project.title} — Amit Kumar`, description: project.summary, type: 'article', url: `/projects/${toProjectSlug(project.slug || project.title)}`, images: project.imageUrl ? [{ url: project.imageUrl, alt: `${project.title} case study by Amit Kumar` }] : [] },
     twitter: { card: 'summary_large_image', title: `${project.title} — Amit Kumar`, description: project.summary, images: project.imageUrl ? [project.imageUrl] : [] },
   };
 }
@@ -49,11 +53,23 @@ export default async function ProjectPage({ params }: Props) {
   const githubUrl = project.githubUrl || (isGitHubUrl(project.projectUrl) ? project.projectUrl : null);
   const liveUrl = project.projectUrl && !isGitHubUrl(project.projectUrl) ? project.projectUrl : null;
   const monogram = project.title.split(/\s+/).slice(0, 2).map((word) => word[0]).join('').toUpperCase();
-  const details = projectDetails(project.detailJson);
+  const details = projectDetails(project.detailJson, project);
   const systemSteps = details.systemSteps.filter((step) => step.label || step.title || step.description);
   const principles = details.principles.filter((principle) => principle.title || principle.description);
 
   return <main className={`inner-page project-case-page${project.imageUrl ? ' has-project-media' : ' project-case-text-only'}`}>
+    <StructuredData data={{
+      '@context': 'https://schema.org', '@type': 'CreativeWork',
+      '@id': absoluteUrl(`/projects/${canonicalSlug}#case-study`),
+      url: absoluteUrl(`/projects/${canonicalSlug}`), name: project.title,
+      headline: project.title, description: project.summary,
+      dateCreated: project.year, inLanguage: 'en-IN',
+      image: project.imageUrl ? absoluteUrl(project.imageUrl) : undefined,
+      keywords: tech.join(', '),
+      creator: { '@type': 'Person', '@id': absoluteUrl('/#person'), name: siteConfig.name },
+      author: { '@id': absoluteUrl('/#person') },
+      mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(`/projects/${canonicalSlug}`) },
+    }} />
     <SiteHeader solid />
     <section className="project-case-hero" aria-labelledby="project-title">
       <div className="project-case-atmosphere" aria-hidden="true"><i /><i /><span>{monogram}</span></div>
@@ -77,7 +93,7 @@ export default async function ProjectPage({ params }: Props) {
 
     {project.imageUrl ? <section className="project-case-showcase" aria-label={`${project.title} project media`}>
       <header><div><span>Interface view</span><p>Project imagery</p></div><small>{project.category} / {project.year}</small></header>
-      <ProjectCaseMediaMotion><figure className="project-case-browser"><div className="project-case-browser-bar" aria-hidden="true"><span><i /><i /><i /></span><b>{project.title.toLowerCase().replaceAll(' ', '-')}.project</b><em>AK</em></div><div className="project-case-image"><Image src={project.imageUrl} alt={`${project.title} project interface`} fill sizes="(max-width: 800px) 94vw, 88vw" priority /></div></figure></ProjectCaseMediaMotion>
+      <ProjectCaseMediaMotion><figure className="project-case-browser"><div className="project-case-browser-bar" aria-hidden="true"><span><i /><i /><i /></span><b>{project.title.toLowerCase().replaceAll(' ', '-')}.project</b><em>AK</em></div><div className="project-case-image"><Image src={project.imageUrl} alt={`${project.title} project interface`} fill sizes="(max-width: 800px) 94vw, 88vw" priority unoptimized={project.imageUrl.startsWith('/api/media/')} /></div></figure></ProjectCaseMediaMotion>
     </section> : null}
 
     <section className="project-case-story" id="project-story">

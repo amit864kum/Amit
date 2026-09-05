@@ -1,8 +1,8 @@
 import { env } from 'cloudflare:workers';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getAdminPasswordHash } from '@/lib/admin-security';
-import { verifyPassword } from '@/lib/security-crypto';
+import { getAdminPasswordHash, setAdminPasswordHash } from '@/lib/admin-security';
+import { hashPassword, hmacValue, passwordHashNeedsUpgrade, verifyPassword } from '@/lib/security-crypto';
 
 export const ADMIN_COOKIE = 'amit_admin_session';
 const SESSION_SECONDS = 60 * 60 * 12;
@@ -31,7 +31,17 @@ function safeEqual(left: Uint8Array, right: Uint8Array) {
 
 export async function verifyAdminCredentials(username: string, password: string) {
   if (!username || username !== config('ADMIN_USERNAME')) return false;
-  return verifyPassword(password, await getAdminPasswordHash(username));
+  const storedHash = await getAdminPasswordHash(username);
+  if (!await verifyPassword(password, storedHash)) return false;
+  if (passwordHashNeedsUpgrade(storedHash)) await setAdminPasswordHash(username, await hashPassword(password));
+  return true;
+}
+
+async function credentialVersion(username: string) {
+  const secret = config('ADMIN_SESSION_SECRET');
+  const passwordHash = await getAdminPasswordHash(username);
+  if (secret.length < 32 || !passwordHash) return '';
+  return (await hmacValue(secret, `credential-version:${passwordHash}`)).slice(0, 32);
 }
 
 async function sign(value: string) {
@@ -46,6 +56,7 @@ export async function createAdminToken(username: string) {
     username,
     expiresAt: Math.floor(Date.now() / 1000) + SESSION_SECONDS,
     nonce: crypto.randomUUID(),
+    credentialVersion: await credentialVersion(username),
   })));
   return payload + '.' + await sign(payload);
 }
@@ -58,8 +69,11 @@ export async function isAdminSession() {
   try {
     const expected = await sign(payload);
     if (!expected || !safeEqual(base64UrlToBytes(signature), base64UrlToBytes(expected))) return false;
-    const data = JSON.parse(new TextDecoder().decode(base64UrlToBytes(payload))) as { username?: string; expiresAt?: number };
-    return data.username === config('ADMIN_USERNAME') && Number(data.expiresAt) > Math.floor(Date.now() / 1000);
+    const data = JSON.parse(new TextDecoder().decode(base64UrlToBytes(payload))) as { username?: string; expiresAt?: number; credentialVersion?: string };
+    return data.username === config('ADMIN_USERNAME')
+      && Number(data.expiresAt) > Math.floor(Date.now() / 1000)
+      && Boolean(data.credentialVersion)
+      && data.credentialVersion === await credentialVersion(data.username);
   } catch {
     return false;
   }

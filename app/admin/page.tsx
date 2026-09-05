@@ -2,7 +2,7 @@ import { requireAdminPage } from '@/lib/admin';
 import { getAdminCounts, getDashboardContent } from '@/lib/admin-data';
 import AdminShell from './_components/AdminShell';
 import Link from 'next/link';
-import { ArrowUpRight, BookOpenText, BriefcaseBusiness, Eye, Inbox, Sparkles } from 'lucide-react';
+import { ArrowUpRight, BookOpenText, BriefcaseBusiness, Inbox, Sparkles } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export default async function AdminPage() {
@@ -12,9 +12,8 @@ export default async function AdminPage() {
     { label: 'Total projects', value: counts.projects, detail: `${counts.featuredProjects} featured`, href: '/admin/projects', icon: BriefcaseBusiness, tone: 'violet' },
     { label: 'Blog library', value: counts.posts, detail: `${counts.publishedPosts} published · ${counts.drafts} drafts`, href: '/admin/blog', icon: BookOpenText, tone: 'blue' },
     { label: 'New enquiries', value: counts.newEnquiries, detail: `${counts.enquiries} total conversations`, href: '/admin/enquiries', icon: Inbox, tone: 'gold' },
-    { label: 'Known visitors', value: counts.visitors, detail: 'Consent-based analytics', href: '/admin/analytics', icon: Eye, tone: 'teal' },
   ];
-  return <AdminShell counts={counts} eyebrow="Command centre" title="Good morning, Amit." description="A clear view of your portfolio, audience, and next opportunities.">
+  return <AdminShell counts={counts} eyebrow="Command centre" title="Good morning, Amit." description="A clear view of your portfolio content and new opportunities.">
     <section className="studio-kpi-grid" aria-label="Portfolio overview">
       {cards.map(({ icon: Icon, ...card }) => <Link href={card.href} key={card.label} className={`studio-kpi tone-${card.tone}`}>
         <span><Icon aria-hidden="true" /></span><small>{card.label}</small><strong>{String(card.value).padStart(2, '0')}</strong><p>{card.detail}</p><ArrowUpRight aria-hidden="true" className="studio-card-arrow" />

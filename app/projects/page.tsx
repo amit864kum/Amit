@@ -26,9 +26,11 @@ import { getProjects } from '@/lib/content';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: 'Projects — Amit Kumar',
-  description: 'Selected full-stack, AI, blockchain, and research projects by Amit Kumar.',
+  title: 'Projects — Amit Kumar Portfolio',
+  description: 'Case studies from Amit Kumar across full-stack web development, blockchain engineering, applied AI, cloud systems, and research products in Patna.',
   alternates: { canonical: '/projects' },
+  openGraph: { title: 'Projects — Amit Kumar Portfolio', description: 'Full-stack, blockchain, AI, and research-led project case studies by Amit Kumar.', url: '/projects', images: [{ url: '/og-social.jpg', width: 1200, height: 630, alt: 'Selected projects by Amit Kumar' }] },
+  twitter: { card: 'summary_large_image', title: 'Projects — Amit Kumar Portfolio', description: 'Full-stack, blockchain, AI, and research-led project case studies by Amit Kumar.', images: ['/og-social.jpg'] },
 };
 
 const workSteps = [
@@ -70,7 +72,11 @@ export default async function ProjectsPage() {
             <p><span aria-hidden="true" /> Available for select collaborations</p>
           </div>
         </div>
+      </section>
 
+      <ProjectExplorer projects={projects} />
+
+      <section className="projects-process" aria-label="Working approach">
         <aside className="projects-hero-dashboard" aria-label="How I work and areas of focus">
           <section className="projects-method-panel" aria-labelledby="projects-method-heading">
             <header>
@@ -126,7 +132,6 @@ export default async function ProjectsPage() {
           </div>
         </aside>
       </section>
-      <ProjectExplorer projects={projects} />
       <SiteFooter />
     </main>
   );

@@ -5,6 +5,7 @@ import { ensureContentTables } from '@/lib/content';
 import { articleBlocks } from '@/lib/blog';
 import { toProjectSlug } from '@/lib/slug';
 import { projectDetails, type ProjectDestination } from '@/lib/project-details';
+import { hasJsonContentType, noStoreHeaders, sameOriginRequest } from '@/lib/request-security';
 
 type ProjectPayload = {
   id?: number; slug: string; title: string; category: string; summary: string;
@@ -13,7 +14,11 @@ type ProjectPayload = {
   published?: number; showOnProjects?: number; detailJson?: string | null;
 };
 
-async function authorized() { await ensureContentTables(); return requireAdminApi(); }
+async function authorized(request: Request) {
+  if (!sameOriginRequest(request) || !hasJsonContentType(request)) return false;
+  await ensureContentTables();
+  return requireAdminApi();
+}
 function normalizeContent(value: string | null | undefined) {
   if (!value) return null;
   const raw = JSON.parse(value) as unknown;
@@ -44,7 +49,7 @@ function normalizeDestination(p: ProjectPayload): ProjectDestination {
   return destination;
 }
 export async function POST(request: Request) {
-  if (!await authorized()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!await authorized(request)) return NextResponse.json({ error: 'Unauthorized or invalid request' }, { status: 403, headers: noStoreHeaders() });
   const p = await request.json() as ProjectPayload;
   let contentJson: string | null; let detailJson: string | null; let destination: ProjectDestination;
   try { contentJson = normalizeContent(p.contentJson); detailJson = normalizeDetails(p.detailJson); destination = normalizeDestination(p); }
@@ -61,7 +66,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ ok: true });
 }
 export async function PATCH(request: Request) {
-  if (!await authorized()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!await authorized(request)) return NextResponse.json({ error: 'Unauthorized or invalid request' }, { status: 403, headers: noStoreHeaders() });
   const p = await request.json() as ProjectPayload;
   let contentJson: string | null; let detailJson: string | null; let destination: ProjectDestination;
   try {
@@ -84,14 +89,14 @@ export async function PATCH(request: Request) {
   return NextResponse.json({ ok: true });
 }
 export async function DELETE(request: Request) {
-  if (!await authorized()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!await authorized(request)) return NextResponse.json({ error: 'Unauthorized or invalid request' }, { status: 403, headers: noStoreHeaders() });
   const { id } = await request.json() as { id: number };
   await env.DB.prepare('DELETE FROM projects WHERE id=?').bind(id).run();
   return NextResponse.json({ ok: true });
 }
 
 export async function PUT(request: Request) {
-  if (!await authorized()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!await authorized(request)) return NextResponse.json({ error: 'Unauthorized or invalid request' }, { status: 403, headers: noStoreHeaders() });
   const { ids } = await request.json() as { ids?: number[] };
   if (!Array.isArray(ids) || !ids.length || ids.some((id) => !Number.isInteger(id)) || new Set(ids).size !== ids.length) {
     return NextResponse.json({ error: 'Invalid project order' }, { status: 400 });

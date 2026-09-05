@@ -13,6 +13,7 @@ export default function ScrollScene({ className, children }: { className: string
   const { scrollYProgress } = useScroll({ target: scene, offset: ['start start', 'end start'] });
   const smoothScroll = useSpring(scrollYProgress, { stiffness: 90, damping: 24, mass: .28 });
   const move = (event: PointerEvent<HTMLElement>) => {
+    if (reduceMotion) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     pointerX.set(((event.clientX - bounds.left) / bounds.width - .5) * 2);
     pointerY.set(((event.clientY - bounds.top) / bounds.height - .5) * 2);
@@ -23,5 +24,5 @@ export default function ScrollScene({ className, children }: { className: string
     '--scene-x': reduceMotion ? 0 : smoothX,
     '--scene-y': reduceMotion ? 0 : smoothY,
   } as unknown as MotionStyle;
-  return <motion.section ref={scene} className={className} style={sceneStyle} onPointerMove={move} onPointerLeave={reset}>{children}</motion.section>;
+  return <motion.section ref={scene} className={className} style={sceneStyle} onPointerMove={reduceMotion ? undefined : move} onPointerLeave={reduceMotion ? undefined : reset}>{children}</motion.section>;
 }

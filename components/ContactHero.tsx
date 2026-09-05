@@ -72,7 +72,7 @@ export default function ContactHero() {
           </a>
           <article className="contact-reference-card">
             <span className="contact-reference-card-icon"><Clock3 aria-hidden="true" /></span>
-            <span><small>Response time</small><strong>Within 24 hours</strong></span>
+            <span><small>Response time</small><strong>Within two working days</strong></span>
           </article>
           <article className="contact-reference-card">
             <span className="contact-reference-card-icon"><UsersRound aria-hidden="true" /></span>

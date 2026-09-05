@@ -6,7 +6,7 @@ import type { Post } from '@/lib/content';
 import { readingTime } from '@/lib/blog';
 
 function PostVisual({ post, priority = false }: { post: Post; priority?: boolean }) {
-  return <div className="blog-card-visual">{post.imageUrl ? <Image src={post.imageUrl} alt={post.title} fill sizes="(max-width: 800px) 92vw, 38vw" priority={priority} /> : <><span>AK / Blog</span><b>{post.category}</b></>}</div>;
+  return <div className={`blog-card-visual${post.imageUrl ? ' has-image' : ''}`}>{post.imageUrl ? <Image className="blog-card-image" src={post.imageUrl} alt={post.title} fill sizes="(max-width: 760px) 92vw, (max-width: 1100px) 86vw, 38vw" priority={priority} unoptimized={post.imageUrl.startsWith('/api/media/')} style={{ objectFit: 'contain', objectPosition: 'center' }} /> : <><span>AK / Blog</span><b>{post.category}</b></>}</div>;
 }
 
 export default function BlogExplorer({ posts }: { posts: Post[] }) {

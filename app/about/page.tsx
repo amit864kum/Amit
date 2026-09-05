@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Bookmark, Boxes, BookOpen, Code2, Download, DraftingCompass, Landmark, Link2, Rocket, Sparkles, UserRound } from 'lucide-react';
 import SiteHeader from '@/components/SiteHeader';
@@ -6,6 +7,16 @@ import ScrollScene from '@/components/ScrollScene';
 import ScrollDepthCards from '@/components/ScrollDepthCards';
 import TechnicalPractice from '@/components/TechnicalPractice';
 import { getProjectCount, getResumeSettings } from '@/lib/content';
+import StructuredData from '@/components/StructuredData';
+import { absoluteUrl, siteConfig } from '@/lib/site-config';
+
+export const metadata: Metadata = {
+  title: 'About Amit Kumar — Full-Stack Developer in Patna',
+  description: 'Meet Amit Kumar, a full-stack and blockchain developer in Patna with IIT Patna research experience across web engineering, distributed systems, and applied AI.',
+  alternates: { canonical: '/about' },
+  openGraph: { title: 'About Amit Kumar — Developer & Researcher', description: 'Full-stack engineering, blockchain, applied AI, and research experience in Patna.', url: '/about', images: [{ url: '/og-social.jpg', width: 1200, height: 630, alt: 'About Amit Kumar' }] },
+  twitter: { card: 'summary_large_image', title: 'About Amit Kumar — Developer & Researcher', description: 'Full-stack engineering, blockchain, applied AI, and research experience in Patna.', images: ['/og-social.jpg'] },
+};
 const experience = [
   { year: '2026', company: 'Museiac', role: 'Full-Stack Developer', summary: 'Building a scalable music platform through typed product interfaces, optimized APIs, and dependable data systems.', focus: ['Next.js', 'Node.js', 'PostgreSQL'] },
   { year: '2025', company: 'IIT Patna — Wireless Communication Research Lab', role: 'Web Developer', summary: 'Designed and deployed an academic platform that makes 5G/6G research, publications, people, and laboratory infrastructure easier to navigate.', focus: ['Research UX', 'Next.js', 'Deployment'] },
@@ -20,13 +31,14 @@ export default async function AboutPage() {
   const projectCountLabel = String(projectCount).padStart(2, '0');
   return (
     <main className="inner-page">
+      <StructuredData data={{ '@context': 'https://schema.org', '@type': 'ProfilePage', '@id': absoluteUrl('/about#profile'), url: absoluteUrl('/about'), name: 'About Amit Kumar', mainEntity: { '@type': 'Person', '@id': absoluteUrl('/#person'), name: siteConfig.name, jobTitle: 'Full-Stack Developer and Blockchain Engineer', homeLocation: { '@type': 'Place', name: siteConfig.location }, sameAs: [siteConfig.linkedIn, siteConfig.github, siteConfig.instagram] } }} />
       <SiteHeader solid />
       <ScrollScene className="about-hero-scene">
         <div className="about-atmosphere" aria-hidden="true"><i /><i /></div>
         <div className="about-hero-stage">
           <div className="about-portrait-scene">
             <div className="portrait-plane portrait-plane-back" /><div className="portrait-plane portrait-plane-mid" />
-            <figure><Image src="/amit-kumar.jpeg" alt="Amit Kumar" fill sizes="(max-width: 800px) 92vw, 44vw" priority /></figure>
+            <figure><Image src="/amit-kumar.jpeg" alt="Portrait of Amit Kumar, full-stack developer in Patna" fill sizes="(max-width: 800px) 92vw, 44vw" priority /></figure>
             <div className="about-portrait-dots" aria-hidden="true" />
           </div>
           <div className="about-landing-copy">

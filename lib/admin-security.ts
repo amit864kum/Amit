@@ -32,10 +32,11 @@ export async function getAdminPasswordHash(username: string) {
   return row?.passwordHash || config('ADMIN_PASSWORD_HASH');
 }
 
-function maskedEmail(email: string) {
-  const [name, domain] = email.split('@');
-  if (!domain) return 'the configured admin email';
-  return `${name.slice(0, 2)}${'*'.repeat(Math.max(3, name.length - 2))}@${domain}`;
+export async function setAdminPasswordHash(username: string, passwordHash: string) {
+  await ensureAdminSecurityTables();
+  await env.DB.prepare(`INSERT INTO admin_security (username,password_hash,updated_at) VALUES (?,?,CURRENT_TIMESTAMP)
+    ON CONFLICT(username) DO UPDATE SET password_hash=excluded.password_hash,updated_at=CURRENT_TIMESTAMP`)
+    .bind(username, passwordHash).run();
 }
 
 function generateCode() {
@@ -49,28 +50,31 @@ async function codeHash(username: string, code: string) {
 
 async function sendResetEmail(email: string, code: string) {
   const apiKey = config('RESEND_API_KEY');
-  if (!apiKey) return { delivered: false, previewCode: process.env.NODE_ENV === 'production' ? undefined : code };
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json', 'idempotency-key': crypto.randomUUID() },
-    body: JSON.stringify({
-      from: config('RESEND_FROM_EMAIL') || 'Amit Portfolio <onboarding@resend.dev>',
-      to: [email],
-      subject: 'Your Amit Portfolio admin verification code',
-      html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:32px"><p style="color:#6b7280">AMIT PORTFOLIO ADMIN</p><h1 style="font-size:28px">Reset your password</h1><p>Use this one-time code to continue:</p><p style="font-size:36px;letter-spacing:8px;font-weight:700">${code}</p><p>This code expires in 10 minutes. If you did not request it, no action is required.</p></div>`,
-    }),
-  });
-  return { delivered: response.ok, previewCode: undefined as string | undefined };
+  if (!apiKey) return { delivered: false };
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json', 'idempotency-key': crypto.randomUUID() },
+      body: JSON.stringify({
+        from: config('RESEND_FROM_EMAIL') || 'Amit Portfolio <onboarding@resend.dev>',
+        to: [email],
+        subject: 'Your Amit Portfolio admin verification code',
+        html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:32px"><p style="color:#6b7280">AMIT PORTFOLIO ADMIN</p><h1 style="font-size:28px">Reset your password</h1><p>Use this one-time code to continue:</p><p style="font-size:36px;letter-spacing:8px;font-weight:700">${code}</p><p>This code expires in 10 minutes. If you did not request it, no action is required.</p></div>`,
+      }),
+      signal: AbortSignal.timeout(8_000),
+    });
+    return { delivered: response.ok };
+  } catch {
+    return { delivered: false };
+  }
 }
 
-export async function requestAdminReset(identifier: string) {
+export async function requestAdminReset() {
   await ensureAdminSecurityTables();
   const username = config('ADMIN_USERNAME');
   const email = config('ADMIN_EMAIL') || 'amitkumarabhinav59@gmail.com';
-  const matches = identifier.trim().toLowerCase() === username.toLowerCase() || identifier.trim().toLowerCase() === email.toLowerCase();
-  if (!matches) return { accepted: true, destination: maskedEmail(email) };
   const recent = await env.DB.prepare("SELECT COUNT(*) AS count FROM password_reset_codes WHERE username=? AND datetime(requested_at)>=datetime('now','-15 minutes')").bind(username).first<{ count: number }>();
-  if (Number(recent?.count || 0) >= 3) return { accepted: false, destination: maskedEmail(email), error: 'Too many requests. Try again in 15 minutes.' };
+  if (Number(recent?.count || 0) >= 3) return { accepted: true, destination: 'the protected admin email', delivered: false };
   const code = generateCode();
   const expiresAt = new Date(Date.now() + 10 * 60_000).toISOString();
   await env.DB.batch([
@@ -78,8 +82,7 @@ export async function requestAdminReset(identifier: string) {
     env.DB.prepare('INSERT INTO password_reset_codes (username,email,code_hash,expires_at,requested_at) VALUES (?,?,?,?,?)').bind(username, email, await codeHash(username, code), expiresAt, new Date().toISOString()),
   ]);
   const delivery = await sendResetEmail(email, code);
-  if (!delivery.delivered && !delivery.previewCode) return { accepted: false, destination: maskedEmail(email), error: 'Email delivery is not configured yet.' };
-  return { accepted: true, destination: maskedEmail(email), previewCode: delivery.previewCode };
+  return { accepted: true, destination: 'the protected admin email', delivered: delivery.delivered };
 }
 
 export async function resetAdminPassword(code: string, password: string) {
@@ -100,7 +103,7 @@ export async function resetAdminPassword(code: string, password: string) {
   await env.DB.batch([
     env.DB.prepare(`INSERT INTO admin_security (username,password_hash,updated_at) VALUES (?,?,CURRENT_TIMESTAMP)
       ON CONFLICT(username) DO UPDATE SET password_hash=excluded.password_hash,updated_at=CURRENT_TIMESTAMP`).bind(username, newHash),
-    env.DB.prepare('UPDATE password_reset_codes SET consumed_at=CURRENT_TIMESTAMP WHERE id=?').bind(row.id),
+    env.DB.prepare('UPDATE password_reset_codes SET consumed_at=CURRENT_TIMESTAMP WHERE username=? AND consumed_at IS NULL').bind(username),
   ]);
   return { ok: true };
 }

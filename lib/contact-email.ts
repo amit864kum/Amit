@@ -1,0 +1,37 @@
+import { config } from '@/lib/env';
+
+type Enquiry = { name: string; email: string; service: string; budget: string; message: string };
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>'"]/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
+  })[character] || character);
+}
+
+export async function sendContactNotification(enquiry: Enquiry) {
+  const apiKey = config('RESEND_API_KEY');
+  const from = config('RESEND_FROM_EMAIL');
+  const to = config('ADMIN_EMAIL');
+  if (!apiKey || !from || !to) return { configured: false, delivered: false };
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        'content-type': 'application/json',
+        'idempotency-key': crypto.randomUUID(),
+      },
+      body: JSON.stringify({
+        from,
+        to: [to],
+        reply_to: enquiry.email,
+        subject: `New portfolio enquiry: ${enquiry.service}`,
+        html: `<div style="font-family:Arial,sans-serif;max-width:640px;margin:auto;padding:32px"><p style="color:#6b7280">AMIT KUMAR PORTFOLIO</p><h1>New project enquiry</h1><p><strong>From:</strong> ${escapeHtml(enquiry.name)} (${escapeHtml(enquiry.email)})</p><p><strong>Service:</strong> ${escapeHtml(enquiry.service)}</p><p><strong>Budget:</strong> ${escapeHtml(enquiry.budget || 'Not provided')}</p><hr><p style="white-space:pre-wrap">${escapeHtml(enquiry.message)}</p></div>`,
+      }),
+      signal: AbortSignal.timeout(7000),
+    });
+    return { configured: true, delivered: response.ok };
+  } catch {
+    return { configured: true, delivered: false };
+  }
+}

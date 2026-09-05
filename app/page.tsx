@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowUpRight, BookOpen, Box, BrainCircuit, Cloud, Code2, Landmark, Network, Target, type LucideIcon } from 'lucide-react';
@@ -9,6 +10,16 @@ import MagneticLink from '@/components/MagneticLink';
 import ScrollTicker from '@/components/ScrollTicker';
 import HomeSelectedWork from '@/components/HomeSelectedWork';
 import { getProjectCount, getProjects } from '@/lib/content';
+import StructuredData from '@/components/StructuredData';
+import { absoluteUrl, siteConfig } from '@/lib/site-config';
+
+export const metadata: Metadata = {
+  title: 'Amit Kumar — Full-Stack & Blockchain Developer in Patna',
+  description: 'Explore Amit Kumar’s portfolio of full-stack web applications, blockchain platforms, applied AI systems, and research-led digital products built in Patna.',
+  alternates: { canonical: '/' },
+  openGraph: { title: siteConfig.title, description: siteConfig.description, url: '/', images: [{ url: '/og-social.jpg', width: 1200, height: 630, alt: 'Amit Kumar developer portfolio' }] },
+  twitter: { card: 'summary_large_image', title: siteConfig.title, description: siteConfig.description, images: ['/og-social.jpg'] },
+};
 
 export const dynamic = 'force-dynamic';
 const services = [
@@ -98,6 +109,31 @@ export default async function Home() {
   const projectCountLabel = String(projectCount).padStart(2, '0');
   return (
     <main>
+      <StructuredData data={{
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'Person', '@id': absoluteUrl('/#person'), name: siteConfig.name,
+            url: absoluteUrl('/'), image: absoluteUrl('/amit-kumar.jpeg'),
+            jobTitle: 'Full-Stack Developer and Blockchain Engineer',
+            description: siteConfig.description,
+            address: { '@type': 'PostalAddress', addressLocality: 'Patna', addressRegion: 'Bihar', addressCountry: 'IN' },
+            email: `mailto:${siteConfig.email}`,
+            sameAs: [siteConfig.linkedIn, siteConfig.github, siteConfig.instagram],
+            knowsAbout: ['Full-stack development', 'Web development', 'Blockchain engineering', 'Applied AI', 'Distributed systems', 'Product design'],
+          },
+          {
+            '@type': 'WebSite', '@id': absoluteUrl('/#website'), url: absoluteUrl('/'),
+            name: 'Amit Kumar Portfolio', description: siteConfig.description,
+            inLanguage: 'en-IN', publisher: { '@id': absoluteUrl('/#person') },
+          },
+          {
+            '@type': 'ProfilePage', '@id': absoluteUrl('/#profile'), url: absoluteUrl('/'),
+            name: 'Amit Kumar Portfolio', mainEntity: { '@id': absoluteUrl('/#person') },
+            isPartOf: { '@id': absoluteUrl('/#website') },
+          },
+        ],
+      }} />
       <SiteHeader />
 
       <ScrollScene className="hero home-hero-scene">
@@ -105,8 +141,8 @@ export default async function Home() {
         <div className="hero-copy">
           <h1>I build digital<span className="serif-line">products with <em>purpose.</em></span></h1>
           <p className="intro">
-            Full-stack developer and blockchain engineer crafting scalable,
-            high-impact experiences where thoughtful design meets dependable code.
+            Based in Patna and working with clients remotely, I craft scalable full-stack
+            and blockchain products where thoughtful design meets dependable code.
           </p>
           <div className="hero-actions">
             <MagneticLink href="/projects" className="button button-primary">Explore my work <span>↗</span></MagneticLink>
@@ -137,13 +173,15 @@ export default async function Home() {
 
       <ScrollTicker items={['Full-stack systems', 'Blockchain products', 'Applied AI', 'Product experience', 'Cloud delivery']} />
 
+      <HomeSelectedWork projects={featuredProjects.slice(0, 3)} />
+
       <section className="what-i-do" aria-labelledby="what-i-do-heading">
         <div className="what-i-do-atmosphere" aria-hidden="true"><i /><i /><i /></div>
         <div className="what-i-do-intro">
           <p className="eyebrow"><span aria-hidden="true" />What I do</p>
           <h2 id="what-i-do-heading">Ideas in.<br /><em>Impact out.</em></h2>
           <p>I work at the intersection of product thinking, emerging technology, and reliable engineering.</p>
-          <Link href="/projects" className="read-link what-i-do-link"><span>See the work behind it</span><i aria-hidden="true"><ArrowUpRight /></i></Link>
+          <Link href="/projects" prefetch={false} className="read-link what-i-do-link"><span>See the work behind it</span><i aria-hidden="true"><ArrowUpRight /></i></Link>
         </div>
         <div className="service-grid">
           {services.map((service, index) => {
@@ -170,7 +208,7 @@ export default async function Home() {
             </div>
             <div className="stack-blueprint-art" aria-hidden="true">
               <Image
-                src="/tech-stack-architecture.png"
+                src="/tech-stack-architecture.webp"
                 alt=""
                 width={1152}
                 height={1536}
@@ -194,7 +232,6 @@ export default async function Home() {
         </div>
       </section>
 
-      <HomeSelectedWork projects={featuredProjects.slice(0, 3)} />
       <SiteFooter />
     </main>
   );

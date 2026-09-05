@@ -23,13 +23,13 @@ const projectMeta: Record<string, { impact: string; progress: string; visual: st
 
 function ProjectVisual({ type, title, imageUrl }: { type: string; title: string; imageUrl: string | null }) {
   const fallback = type === 'chain'
-    ? '/featured-work/sugarcane-supply-chain.png'
+    ? '/featured-work/sugarcane-supply-chain.webp'
     : type === 'search'
-      ? '/featured-work/photo-finder.png'
-      : '/featured-work/fedchain.png';
+      ? '/featured-work/photo-finder.webp'
+      : '/featured-work/fedchain.webp';
   return (
     <div className={`hsw-visual hsw-${type}-visual`}>
-      <Image src={imageUrl || fallback} alt={`${title} project visualization`} fill sizes="(max-width: 760px) 92vw, (max-width: 1180px) 86vw, 48vw" />
+      <Image src={imageUrl || fallback} alt={`${title} project visualization`} fill sizes="(max-width: 760px) 92vw, (max-width: 1180px) 86vw, 48vw" unoptimized={Boolean(imageUrl?.startsWith('/api/media/'))} />
       <i aria-hidden="true" />
     </div>
   );
@@ -50,10 +50,10 @@ export default function HomeSelectedWork({ projects }: { projects: Project[] }) 
       <div className="hsw-layout">
         <motion.aside className="hsw-intro" {...reveal}>
           <p className="hsw-kicker"><span aria-hidden="true" />Selected work / Home</p>
-          <h2 id="selected-work-heading">Featured <Sparkles aria-hidden="true" /><em>Projects</em></h2>
+          <h2 id="selected-work-heading">Featured <em>Projects</em></h2>
           <i className="hsw-heading-rule" aria-hidden="true" />
           <p className="hsw-intro-copy">A curated selection of systems I&apos;ve designed and built across full-stack engineering, blockchain, applied AI, and product experience.</p>
-          <Link className="hsw-all-link" href="/projects"><span>View all projects</span><i aria-hidden="true"><ArrowRight /></i></Link>
+          <Link className="hsw-all-link" href="/projects" prefetch={false}><span>View all projects</span><i aria-hidden="true"><ArrowRight /></i></Link>
           <div className="hsw-principles" aria-label="Work principles">
             <p><Box aria-hidden="true" /><span>End-to-end<br />ownership</span></p>
             <p><Target aria-hidden="true" /><span>Impact<br />focused</span></p>
@@ -70,7 +70,7 @@ export default function HomeSelectedWork({ projects }: { projects: Project[] }) 
             const href = project.destination === 'live' ? project.projectUrl : project.destination === 'github' ? project.githubUrl : `/projects/${slug}`;
             const tags = project.tech.split(',').map((tag) => tag.trim()).filter(Boolean).slice(0, 3);
             return <motion.article className={`hsw-card hsw-card-${index + 1}`} key={project.id} {...reveal} transition={reduceMotion ? undefined : { duration: .75, delay: index * .08, ease: [0.22, 1, 0.36, 1] }}>
-              <Link href={href || '#'} target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined} aria-label={`${external ? 'Open' : 'View'} ${project.title} project`}>
+              <Link href={href || '#'} prefetch={false} target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined} aria-label={`${external ? 'Open' : 'View'} ${project.title} project`}>
                 <div className="hsw-card-copy">
                   <span className="hsw-number">{String(index + 1).padStart(2, '0')}</span>
                   <span className="hsw-status"><i aria-hidden="true" /><span>{project.category}</span></span>

@@ -7,7 +7,7 @@ import { toProjectSlug } from '@/lib/slug';
 function ProjectArtwork({ project, index }: { project: Project; index: number }) {
   const monogram = project.title.split(/\s+/).slice(0, 2).map((word) => word[0]).join('').toUpperCase();
   return <div className={`project-showcase-art tone-${(index % 3) + 1}`}>
-    {project.imageUrl ? <Image src={project.imageUrl} alt={`${project.title} project preview`} fill sizes="(max-width: 640px) 92vw, (max-width: 1020px) 44vw, (max-width: 1380px) 30vw, 22vw" /> : <div className="project-showcase-monogram"><span>{monogram}</span><i /></div>}
+    {project.imageUrl ? <Image src={project.imageUrl} alt={`${project.title} project preview`} fill sizes="(max-width: 640px) 92vw, (max-width: 1020px) 44vw, (max-width: 1380px) 30vw, 22vw" unoptimized={project.imageUrl.startsWith('/api/media/')} /> : <div className="project-showcase-monogram"><span>{monogram}</span><i /></div>}
   </div>;
 }
 

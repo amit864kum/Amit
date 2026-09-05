@@ -9,6 +9,14 @@ export type ProjectDetailSettings = {
   ctaEyebrow: string; ctaHeading: string; ctaAccent: string;
 };
 
+type ProjectDetailContext = {
+  title: string;
+  category: string;
+  summary: string;
+  body: string;
+  tech: string;
+};
+
 export const defaultProjectDetails: ProjectDetailSettings = {
   contextHeading: 'From complexity', contextAccent: 'to clarity.',
   contextDescription: 'A focused look at the thinking, architecture, and product decisions behind the work.',
@@ -31,21 +39,55 @@ export const defaultProjectDetails: ProjectDetailSettings = {
 };
 
 const asText = (value: unknown, fallback: string) => typeof value === 'string' ? value : fallback;
+const contextualText = (value: unknown, generic: string, fallback: string) => typeof value === 'string' && value.trim() && value !== generic ? value : fallback;
 
-export function projectDetails(value: string | null | undefined): ProjectDetailSettings {
-  if (!value) return structuredClone(defaultProjectDetails);
+function contextualProjectDetails(project?: ProjectDetailContext): ProjectDetailSettings {
+  if (!project) return structuredClone(defaultProjectDetails);
+  const tools = project.tech.split(',').map((item) => item.trim()).filter(Boolean);
+  const primaryTools = tools.slice(0, 3).join(', ');
+  const discipline = project.category.split('/')[0].trim().toLowerCase();
+  return {
+    contextHeading: 'The challenge behind',
+    contextAccent: project.title + '.',
+    contextDescription: project.summary,
+    designIntent: project.body,
+    walkthroughHeading: 'Inside the product,',
+    walkthroughAccent: 'decision by decision.',
+    walkthroughDescription: `The project story connects the ${discipline} problem to the implementation choices and final delivery.`,
+    systemHeading: 'How the system',
+    systemAccent: 'comes together.',
+    systemDescription: primaryTools ? `The architecture combines ${primaryTools} around the workflow described above.` : 'Each layer is tied directly to the product workflow and delivery constraints.',
+    systemSteps: [
+      { label: 'Problem', title: `Frame the ${discipline} workflow.`, description: project.summary },
+      { label: 'Architecture', title: primaryTools ? `Connect ${tools.slice(0, 2).join(' and ')}.` : 'Connect the product layers.', description: primaryTools ? `Use ${primaryTools} where each tool has a clear responsibility in the system.` : project.body },
+      { label: 'Delivery', title: 'Validate the complete path.', description: 'Check the end-to-end workflow, failure states, and production constraints before release.' },
+    ],
+    principles: [
+      { title: 'Product outcome', description: project.summary },
+      { title: 'Implementation', description: primaryTools ? `Built around ${primaryTools}, with the remaining stack supporting delivery and operations.` : project.body },
+      { title: 'Project context', description: project.body },
+    ],
+    ctaEyebrow: 'Have a related challenge?', ctaHeading: "Let's shape the right", ctaAccent: 'product and system.',
+  };
+}
+
+export function projectDetails(value: string | null | undefined, project?: ProjectDetailContext): ProjectDetailSettings {
+  const defaults = contextualProjectDetails(project);
+  if (!value) return defaults;
   try {
     const parsed = JSON.parse(value) as Partial<ProjectDetailSettings>;
-    const steps = Array.isArray(parsed.systemSteps) ? parsed.systemSteps.slice(0, 3) : defaultProjectDetails.systemSteps;
-    const principles = Array.isArray(parsed.principles) ? parsed.principles.slice(0, 3) : defaultProjectDetails.principles;
+    const hasGenericSteps = JSON.stringify(parsed.systemSteps) === JSON.stringify(defaultProjectDetails.systemSteps);
+    const hasGenericPrinciples = JSON.stringify(parsed.principles) === JSON.stringify(defaultProjectDetails.principles);
+    const steps = Array.isArray(parsed.systemSteps) && !hasGenericSteps ? parsed.systemSteps.slice(0, 3) : defaults.systemSteps;
+    const principles = Array.isArray(parsed.principles) && !hasGenericPrinciples ? parsed.principles.slice(0, 3) : defaults.principles;
     return {
-      contextHeading: asText(parsed.contextHeading, defaultProjectDetails.contextHeading), contextAccent: asText(parsed.contextAccent, defaultProjectDetails.contextAccent),
-      contextDescription: asText(parsed.contextDescription, defaultProjectDetails.contextDescription), designIntent: asText(parsed.designIntent, defaultProjectDetails.designIntent),
-      walkthroughHeading: asText(parsed.walkthroughHeading, defaultProjectDetails.walkthroughHeading), walkthroughAccent: asText(parsed.walkthroughAccent, defaultProjectDetails.walkthroughAccent), walkthroughDescription: asText(parsed.walkthroughDescription, defaultProjectDetails.walkthroughDescription),
-      systemHeading: asText(parsed.systemHeading, defaultProjectDetails.systemHeading), systemAccent: asText(parsed.systemAccent, defaultProjectDetails.systemAccent), systemDescription: asText(parsed.systemDescription, defaultProjectDetails.systemDescription),
+      contextHeading: contextualText(parsed.contextHeading, defaultProjectDetails.contextHeading, defaults.contextHeading), contextAccent: contextualText(parsed.contextAccent, defaultProjectDetails.contextAccent, defaults.contextAccent),
+      contextDescription: contextualText(parsed.contextDescription, defaultProjectDetails.contextDescription, defaults.contextDescription), designIntent: contextualText(parsed.designIntent, defaultProjectDetails.designIntent, defaults.designIntent),
+      walkthroughHeading: contextualText(parsed.walkthroughHeading, defaultProjectDetails.walkthroughHeading, defaults.walkthroughHeading), walkthroughAccent: contextualText(parsed.walkthroughAccent, defaultProjectDetails.walkthroughAccent, defaults.walkthroughAccent), walkthroughDescription: contextualText(parsed.walkthroughDescription, defaultProjectDetails.walkthroughDescription, defaults.walkthroughDescription),
+      systemHeading: contextualText(parsed.systemHeading, defaultProjectDetails.systemHeading, defaults.systemHeading), systemAccent: contextualText(parsed.systemAccent, defaultProjectDetails.systemAccent, defaults.systemAccent), systemDescription: contextualText(parsed.systemDescription, defaultProjectDetails.systemDescription, defaults.systemDescription),
       systemSteps: Array.from({ length: 3 }, (_, index) => ({ label: asText(steps[index]?.label, ''), title: asText(steps[index]?.title, ''), description: asText(steps[index]?.description, '') })),
       principles: Array.from({ length: 3 }, (_, index) => ({ title: asText(principles[index]?.title, ''), description: asText(principles[index]?.description, '') })),
-      ctaEyebrow: asText(parsed.ctaEyebrow, defaultProjectDetails.ctaEyebrow), ctaHeading: asText(parsed.ctaHeading, defaultProjectDetails.ctaHeading), ctaAccent: asText(parsed.ctaAccent, defaultProjectDetails.ctaAccent),
+      ctaEyebrow: contextualText(parsed.ctaEyebrow, defaultProjectDetails.ctaEyebrow, defaults.ctaEyebrow), ctaHeading: contextualText(parsed.ctaHeading, defaultProjectDetails.ctaHeading, defaults.ctaHeading), ctaAccent: contextualText(parsed.ctaAccent, defaultProjectDetails.ctaAccent, defaults.ctaAccent),
     };
-  } catch { return structuredClone(defaultProjectDetails); }
+  } catch { return defaults; }
 }

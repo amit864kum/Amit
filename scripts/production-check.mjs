@@ -1,0 +1,50 @@
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const root = process.cwd();
+const requiredFiles = [
+  'proxy.ts', 'app/robots.ts', 'app/sitemap.ts', 'app/manifest.ts', 'app/not-found.tsx',
+  'lib/request-security.ts', 'components/StructuredData.tsx', 'drizzle/0009_natural_puppet_master.sql',
+];
+const failures = [];
+for (const file of requiredFiles) if (!existsSync(resolve(root, file))) failures.push(`Missing ${file}`);
+
+const read = (file) => readFileSync(resolve(root, file), 'utf8');
+const proxy = read('proxy.ts');
+for (const header of ['Content-Security-Policy', 'Strict-Transport-Security', 'X-Content-Type-Options', 'Referrer-Policy', 'Permissions-Policy']) {
+  if (!proxy.includes(header)) failures.push(`Security header not configured: ${header}`);
+}
+if (/script-src[^\n]*unsafe-inline/.test(proxy)) failures.push('CSP still permits unsafe inline scripts');
+if (!proxy.includes("'nonce-${nonce}'")) failures.push('CSP script nonce is missing');
+const layout = read('app/layout.tsx');
+for (const marker of ['metadataBase', 'openGraph', 'twitter', 'verification', 'robots']) {
+  if (!layout.includes(marker)) failures.push(`Root metadata is missing ${marker}`);
+}
+const project = read('app/projects/[slug]/page.tsx');
+const article = read('app/blog/[slug]/page.tsx');
+if (!project.includes("'@type': 'CreativeWork'")) failures.push('Project structured data is missing');
+if (!article.includes("'@type': 'Article'")) failures.push('Article structured data is missing');
+if (!article.includes('alternates: { canonical:')) failures.push('Article canonical URL is missing');
+const contact = read('app/api/contact/route.ts');
+for (const marker of ['rateLimit', 'verifyTurnstile', 'sameOriginRequest', 'validSubmissionTiming']) {
+  if (!contact.includes(marker)) failures.push(`Contact protection is missing ${marker}`);
+}
+const protectedMutations = [
+  'app/api/admin/logout/route.ts', 'app/api/admin/messages/route.ts', 'app/api/admin/posts/route.ts',
+  'app/api/admin/projects/route.ts', 'app/api/admin/resume/route.ts', 'app/api/admin/upload/route.ts',
+];
+for (const file of protectedMutations) {
+  if (!read(file).includes('sameOriginRequest')) failures.push(`Admin mutation lacks same-origin validation: ${file}`);
+}
+for (const file of ['app/api/admin/login/route.ts', 'app/api/admin/password/forgot/route.ts', 'app/api/admin/password/reset/route.ts', 'app/api/admin/messages/route.ts', 'app/api/admin/posts/route.ts', 'app/api/admin/projects/route.ts', 'app/api/admin/resume/route.ts']) {
+  if (!read(file).includes('hasJsonContentType')) failures.push(`JSON endpoint lacks content-type enforcement: ${file}`);
+}
+if (read('lib/request-security.ts').includes("request.headers.get('user-agent')")) failures.push('Rate-limit key still trusts User-Agent');
+if (read('app/api/admin/password/forgot/route.ts').includes('previewCode')) failures.push('Password recovery still exposes preview codes');
+if (!read('app/api/admin/upload/route.ts').includes('matchesSignature')) failures.push('Upload content signatures are not verified');
+if (!read('lib/security-crypto.ts').includes('const iterations = 600_000')) failures.push('Password hashing work factor was not upgraded');
+if (failures.length) {
+  console.error(`Production checks failed:\n- ${failures.join('\n- ')}`);
+  process.exit(1);
+}
+console.log('Production source checks passed.');

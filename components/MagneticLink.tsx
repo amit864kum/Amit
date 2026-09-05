@@ -17,5 +17,5 @@ export default function MagneticLink({ href, className, children }: { href: stri
     y.set((event.clientY - bounds.top - bounds.height / 2) * .16);
   };
   const reset = () => { x.set(0); y.set(0); };
-  return <MotionLink href={href} className={className} style={{ x: springX, y: springY }} onPointerMove={move} onPointerLeave={reset} whileTap={{ scale: .97 }}>{children}</MotionLink>;
+  return <MotionLink href={href} prefetch={false} className={className} style={{ x: springX, y: springY }} onPointerMove={move} onPointerLeave={reset} whileTap={{ scale: .97 }}>{children}</MotionLink>;
 }

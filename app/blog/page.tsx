@@ -4,6 +4,13 @@ import BlogExplorer from '@/components/BlogExplorer';
 import { getPosts } from '@/lib/content';
 
 export const dynamic = 'force-dynamic';
+export const metadata: Metadata = {
+  title: 'Blog — Engineering, Blockchain & Product Notes',
+  description: 'Articles by Amit Kumar on full-stack engineering, blockchain products, distributed systems, research, and building dependable web experiences.',
+  alternates: { canonical: '/blog' },
+  openGraph: { title: 'Amit Kumar Blog — Engineering Field Notes', description: 'Practical writing on full-stack development, blockchain, distributed systems, and product engineering.', url: '/blog', images: [{ url: '/og-social.jpg', width: 1200, height: 630, alt: 'Amit Kumar engineering blog' }] },
+  twitter: { card: 'summary_large_image', title: 'Amit Kumar Blog — Engineering Field Notes', description: 'Practical writing on full-stack development, blockchain, distributed systems, and product engineering.', images: ['/og-social.jpg'] },
+};
 export default async function BlogPage() {
   const posts = await getPosts();
   return (
@@ -15,3 +22,4 @@ export default async function BlogPage() {
     </main>
   );
 }
+import type { Metadata } from 'next';

@@ -1,5 +1,6 @@
 declare namespace Cloudflare {
   interface Env {
+    DB: D1Database;
     FILES: R2Bucket;
     ADMIN_USERNAME: string;
     ADMIN_PASSWORD_HASH: string;
@@ -7,9 +8,9 @@ declare namespace Cloudflare {
     ADMIN_EMAIL: string;
     RESEND_API_KEY: string;
     RESEND_FROM_EMAIL: string;
-    NEXT_PUBLIC_GA_MEASUREMENT_ID: string;
-    GA4_PROPERTY_ID: string;
-    GOOGLE_ANALYTICS_CLIENT_EMAIL: string;
-    GOOGLE_ANALYTICS_PRIVATE_KEY: string;
+    GOOGLE_SITE_VERIFICATION: string;
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY: string;
+    TURNSTILE_SECRET_KEY: string;
+    SITE_URL: string;
   }
 }

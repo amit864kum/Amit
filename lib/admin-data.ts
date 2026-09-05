@@ -1,6 +1,5 @@
 import { env } from 'cloudflare:workers';
 import { ensureContentTables } from '@/lib/content';
-import { ensureAnalyticsTables } from '@/lib/analytics';
 import { toProjectSlug } from '@/lib/slug';
 
 export type AdminCounts = {
@@ -11,7 +10,6 @@ export type AdminCounts = {
   drafts: number;
   enquiries: number;
   newEnquiries: number;
-  visitors: number;
 };
 
 export type DashboardContentItem = {
@@ -32,13 +30,12 @@ export type DashboardEnquiry = {
 };
 
 export async function getAdminCounts(): Promise<AdminCounts> {
-  await Promise.all([ensureContentTables(), ensureAnalyticsTables()]);
+  await ensureContentTables();
   const db = env.DB;
-  const [projects, posts, enquiries, visitors] = await Promise.all([
+  const [projects, posts, enquiries] = await Promise.all([
     db.prepare('SELECT COUNT(*) AS total, SUM(CASE WHEN featured=1 THEN 1 ELSE 0 END) AS featured FROM projects').first<{ total: number; featured: number | null }>(),
     db.prepare('SELECT COUNT(*) AS total, SUM(CASE WHEN published=1 THEN 1 ELSE 0 END) AS published FROM posts').first<{ total: number; published: number | null }>(),
     db.prepare("SELECT COUNT(*) AS total, SUM(CASE WHEN status='new' THEN 1 ELSE 0 END) AS fresh FROM contact_messages").first<{ total: number; fresh: number | null }>(),
-    db.prepare("SELECT COUNT(DISTINCT visitor_id) AS total FROM analytics_events WHERE event_type='page_view'").first<{ total: number }>(),
   ]);
   const postTotal = Number(posts?.total || 0);
   const published = Number(posts?.published || 0);
@@ -50,7 +47,6 @@ export async function getAdminCounts(): Promise<AdminCounts> {
     drafts: Math.max(0, postTotal - published),
     enquiries: Number(enquiries?.total || 0),
     newEnquiries: Number(enquiries?.fresh || 0),
-    visitors: Number(visitors?.total || 0),
   };
 }
 

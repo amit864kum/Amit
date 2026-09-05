@@ -64,6 +64,13 @@
       "when": 1788256070361,
       "tag": "0008_high_korvac",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1788282822365,
+      "tag": "0009_natural_puppet_master",
+      "breakpoints": true
     }
   ]
 }

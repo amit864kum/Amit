@@ -8,6 +8,8 @@ import ReadingProgress from '@/components/ReadingProgress';
 import ShareActions from '@/components/ShareActions';
 import { getPost, getPosts } from '@/lib/content';
 import { articleBlocks, blockSections, readingTime } from '@/lib/blog';
+import StructuredData from '@/components/StructuredData';
+import { absoluteUrl, siteConfig } from '@/lib/site-config';
 
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ slug: string }> };
@@ -19,7 +21,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: post.title + ' — Amit Kumar',
     description: post.excerpt,
-    openGraph: { title: post.title + ' — Amit Kumar', description: post.excerpt, type: 'article', images },
+    alternates: { canonical: `/blog/${post.slug}` },
+    authors: [{ name: siteConfig.name, url: '/about' }],
+    openGraph: { title: post.title + ' — Amit Kumar', description: post.excerpt, type: 'article', url: `/blog/${post.slug}`, publishedTime: new Date(post.publishedAt).toISOString(), authors: [siteConfig.name], section: post.category, images: post.imageUrl ? [{ url: post.imageUrl, alt: `${post.title} article cover` }] : images },
     twitter: { card: 'summary_large_image', title: post.title + ' — Amit Kumar', description: post.excerpt, images: post.imageUrl ? [post.imageUrl] : [] },
   };
 }
@@ -34,6 +38,17 @@ export default async function PostPage({ params }: Props) {
   const reading = readingTime(post.body);
   return (
     <main className="inner-page article-page">
+      <StructuredData data={{
+        '@context': 'https://schema.org', '@type': 'Article',
+        '@id': absoluteUrl(`/blog/${post.slug}#article`),
+        mainEntityOfPage: absoluteUrl(`/blog/${post.slug}`),
+        headline: post.title, description: post.excerpt,
+        datePublished: new Date(post.publishedAt).toISOString(),
+        articleSection: post.category, wordCount: reading.words,
+        image: post.imageUrl ? absoluteUrl(post.imageUrl) : undefined,
+        author: { '@type': 'Person', '@id': absoluteUrl('/#person'), name: siteConfig.name, url: absoluteUrl('/about') },
+        publisher: { '@id': absoluteUrl('/#person') }, inLanguage: 'en-IN',
+      }} />
       <ReadingProgress />
       <SiteHeader solid />
       <article className="blog-article">
@@ -44,12 +59,12 @@ export default async function PostPage({ params }: Props) {
           <p className="article-deck">{post.excerpt}</p>
           <div className="article-meta"><Link href="/about" className="author-mini"><span><b>Amit Kumar</b><small>Author & engineer</small></span></Link><time>{new Date(post.publishedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</time><span>{reading.minutes} min read</span><span>{reading.words} words</span></div>
         </header>
-        {post.imageUrl ? <div className="article-cover"><Image src={post.imageUrl} alt={post.title} fill sizes="(max-width: 980px) 92vw, 900px" priority /></div> : null}
+        {post.imageUrl ? <figure className="article-cover"><Image className="article-cover-image" src={post.imageUrl} alt={post.title} fill sizes="(max-width: 980px) 92vw, 900px" priority unoptimized={post.imageUrl.startsWith('/api/media/')} style={{ objectFit: 'contain', objectPosition: 'center' }} /></figure> : null}
         <div className="article-layout">
           <aside className="article-sidebar"><p>In this article</p><nav>{sections.map((section) => <a href={'#' + section.id} key={section.id}>{section.heading}</a>)}</nav><ShareActions title={post.title} /></aside>
           <div className="article-prose">{sections.map((section) => <section id={section.id} key={section.id}><h2>{section.heading}</h2>{section.blocks.map((block) => {
             if (block.type === 'paragraph') return <p key={block.id}>{block.text}</p>;
-            if (block.type === 'image' && block.imageUrl) return <figure className="article-inline-image" key={block.id}>{block.imageHeading ? <h3>{block.imageHeading}</h3> : null}<div><Image src={block.imageUrl} alt={block.alt || 'Article image'} fill sizes="(max-width: 820px) 92vw, 760px" loading="lazy" /></div>{block.imageDescription ? <figcaption>{block.imageDescription}</figcaption> : null}</figure>;
+            if (block.type === 'image' && block.imageUrl) return <figure className="article-inline-image" key={block.id}>{block.imageHeading ? <h3>{block.imageHeading}</h3> : null}<div><Image className="article-inline-image-element" src={block.imageUrl} alt={block.alt || 'Article image'} fill sizes="(max-width: 820px) 92vw, 760px" loading="lazy" unoptimized={block.imageUrl.startsWith('/api/media/')} style={{ objectFit: 'contain', objectPosition: 'center' }} /></div>{block.imageDescription ? <figcaption>{block.imageDescription}</figcaption> : null}</figure>;
             return null;
           })}</section>)}</div>
         </div>

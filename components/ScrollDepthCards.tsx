@@ -6,7 +6,7 @@ export default function ScrollDepthCards({ children }: { children: ReactNode }) 
   const rail = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const node = rail.current;
-    if (!node) return;
+    if (!node || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     let frame = 0;
     const update = () => {
       frame = 0;

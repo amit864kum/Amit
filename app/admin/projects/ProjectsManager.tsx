@@ -8,6 +8,7 @@ import type { Project } from '@/lib/content';
 import { articleBlocks, type ArticleBlock } from '@/lib/blog';
 import { toProjectSlug } from '@/lib/slug';
 import { projectDetails, type ProjectDetailSettings } from '@/lib/project-details';
+import { useUnsavedChanges } from '@/app/admin/_components/useUnsavedChanges';
 
 const blank: Project = { id: 0, slug: '', title: '', category: '', summary: '', body: '', contentJson: null, tech: '', year: new Date().getFullYear().toString(), imageUrl: '', projectUrl: '', githubUrl: '', featured: 0, destination: 'case_study', published: 1, showOnProjects: 1, detailJson: null, displayOrder: 0 };
 
@@ -43,6 +44,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
   const [status, setStatus] = useState('');
   const [uploadingBlock, setUploadingBlock] = useState<string | null>(null);
   const [editorVersion, setEditorVersion] = useState(0);
+  const [dirty, setDirty] = useState(false);
   const [orderedProjects, setOrderedProjects] = useState(projects);
   const [orderStatus, setOrderStatus] = useState('Use the arrows to set the public display order.');
   const [orderPending, setOrderPending] = useState(false);
@@ -59,17 +61,24 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
     return ((await response.json()) as { url: string }).url;
   }
 
-  function resetEditor() {
+  useUnsavedChanges(dirty);
+  function markDirty() { setDirty(true); setStatus(''); }
+
+  function resetEditor(force = false) {
+    if (!force && dirty && !confirm('Discard the unsaved project changes?')) return;
     setProject(blank);
     setBlocks(starterBlocks());
     setStatus('');
+    setDirty(false);
     setEditorVersion((current) => current + 1);
   }
 
   function editProject(item: Project) {
+    if (dirty && !confirm('Discard the unsaved project changes and open another project?')) return;
     setProject({ ...item, slug: toProjectSlug(item.slug || item.title), imageUrl: item.imageUrl || '' });
     setBlocks(item.contentJson ? articleBlocks(item.contentJson, '') : []);
     setStatus('');
+    setDirty(false);
     setEditorVersion((current) => current + 1);
     document.getElementById('project-editor')?.scrollIntoView({ behavior: 'smooth' });
   }
@@ -81,10 +90,12 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
         ? { id: blockId(), type, text: '' }
         : { id: blockId(), type, imageUrl: '', imageHeading: '', imageDescription: '', alt: '' };
     setBlocks((current) => [...current, block]);
+    markDirty();
   }
 
   function updateBlock(id: string, updates: Partial<ArticleBlock>) {
     setBlocks((current) => current.map((block) => block.id === id ? { ...block, ...updates } : block));
+    markDirty();
   }
 
   function moveBlock(index: number, direction: -1 | 1) {
@@ -95,6 +106,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
       [next[index], next[target]] = [next[target], next[index]];
       return next;
     });
+    markDirty();
   }
 
   async function uploadBlockImage(block: ArticleBlock, event: ChangeEvent<HTMLInputElement>) {
@@ -151,7 +163,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
         }),
       });
       if (!response.ok) throw new Error('Save failed');
-      resetEditor();
+      resetEditor(true);
       setStatus('Project and content sections saved successfully.');
       router.refresh();
     } catch {
@@ -162,7 +174,8 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
   async function remove(id: number) {
     if (!confirm('Delete this project permanently?')) return;
     const response = await fetch('/api/admin/projects', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }) });
-    if (response.ok) { if (project.id === id) resetEditor(); router.refresh(); }
+    if (response.ok) { if (project.id === id) resetEditor(true); setStatus('Project deleted.'); router.refresh(); }
+    else setStatus('Could not delete this project. Please try again.');
   }
 
   async function move(index: number, direction: -1 | 1) {
@@ -193,7 +206,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
         <div className="studio-record-list">{orderedProjects.map((item, index) => { const href = destinationHref(item); return <article key={item.id}><span className="studio-record-index">{String(index + 1).padStart(2, '0')}</span><div className="studio-record-copy"><div><small>{item.category} · {item.year} · {item.published ? item.destination.replace('_', ' ') : 'draft'}</small>{item.featured ? <b><Star /> Featured</b> : null}</div><h3>{item.title}</h3><p>{item.summary}</p><div className="studio-tech-preview">{item.tech.split(',').slice(0, 3).map((tech) => <span key={tech}>{tech.trim()}</span>)}</div></div><div className="studio-order-controls" aria-label={`Change display position for ${item.title}`}><button type="button" onClick={() => move(index, -1)} disabled={index === 0 || orderPending} aria-label={`Move ${item.title} up`} title="Move up"><ArrowUp /></button><button type="button" onClick={() => move(index, 1)} disabled={index === orderedProjects.length - 1 || orderPending} aria-label={`Move ${item.title} down`} title="Move down"><ArrowDown /></button></div><div className="studio-record-actions">{href ? <a href={href} target="_blank" rel="noreferrer" aria-label={`View ${item.title}`}><ExternalLink /></a> : null}<button type="button" onClick={() => editProject(item)} aria-label={`Edit ${item.title}`}><Edit3 /></button><button type="button" className="danger" onClick={() => remove(item.id)} aria-label={`Delete ${item.title}`}><Trash2 /></button></div></article>; })}</div>
       </section>
 
-      <form id="project-editor" className="studio-editor studio-post-editor" action={save} key={`${project.id}-${editorVersion}`}>
+      <form id="project-editor" className="studio-editor studio-post-editor" action={save} onChange={markDirty} key={`${project.id}-${editorVersion}`}>
         <div className="studio-section-title"><div><small>{project.id ? 'Editing record' : 'New record'}</small><h2>{project.id ? project.title : 'Build a project story'}</h2></div>{project.id ? <button type="button" onClick={resetEditor}>Clear</button> : <ImagePlus />}</div>
         <div className="studio-form-grid studio-post-meta">
           <label className="full">Project title<input name="title" required defaultValue={project.title} /></label>
@@ -217,11 +230,11 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
           </div>
           <div className="studio-block-list">
             {blocks.map((block, index) => <article id={`project-block-${block.id}`} className={`studio-content-block type-${block.type}`} key={block.id}>
-              <header><div><span>{String(index + 1).padStart(2, '0')}</span><b>{block.type === 'heading' ? 'Section heading' : block.type === 'paragraph' ? 'Paragraph' : 'Project screenshot'}</b></div><div><button type="button" onClick={() => moveBlock(index, -1)} disabled={index === 0} aria-label={`Move content block ${index + 1} up`}><ArrowUp /></button><button type="button" onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} aria-label={`Move content block ${index + 1} down`}><ArrowDown /></button><button type="button" className="danger" onClick={() => setBlocks((current) => current.filter((item) => item.id !== block.id))} aria-label={`Delete content block ${index + 1}`}><Trash2 /></button></div></header>
+              <header><div><span>{String(index + 1).padStart(2, '0')}</span><b>{block.type === 'heading' ? 'Section heading' : block.type === 'paragraph' ? 'Paragraph' : 'Project screenshot'}</b></div><div><button type="button" onClick={() => moveBlock(index, -1)} disabled={index === 0} aria-label={`Move content block ${index + 1} up`}><ArrowUp /></button><button type="button" onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} aria-label={`Move content block ${index + 1} down`}><ArrowDown /></button><button type="button" className="danger" onClick={() => { if (confirm(`Delete content block ${index + 1}?`)) { setBlocks((current) => current.filter((item) => item.id !== block.id)); markDirty(); } }} aria-label={`Delete content block ${index + 1}`}><Trash2 /></button></div></header>
               {block.type === 'heading' ? <label htmlFor={`project-heading-${block.id}`}>Heading<input id={`project-heading-${block.id}`} required value={block.heading || ''} onChange={(event) => updateBlock(block.id, { heading: event.target.value })} placeholder="A clear section heading" /></label> : null}
               {block.type === 'paragraph' ? <label htmlFor={`project-paragraph-${block.id}`}>Paragraph<textarea id={`project-paragraph-${block.id}`} required rows={6} value={block.text || ''} onChange={(event) => updateBlock(block.id, { text: event.target.value })} placeholder="Explain this part of the project…" /></label> : null}
               {block.type === 'image' ? <div className="studio-image-block">
-                <div className={`studio-image-preview${block.imageUrl ? ' has-image' : ''}`}>{block.imageUrl ? <Image src={block.imageUrl} alt="" fill sizes="(max-width: 1180px) 100vw, 420px" /> : <><ImagePlus /><span>No screenshot uploaded</span></>}</div>
+                <div className={`studio-image-preview${block.imageUrl ? ' has-image' : ''}`}>{block.imageUrl ? <Image src={block.imageUrl} alt="" fill sizes="(max-width: 1180px) 100vw, 420px" unoptimized={block.imageUrl.startsWith('/api/media/')} /> : <><ImagePlus /><span>No screenshot uploaded</span></>}</div>
                 <div className="studio-image-fields">
                   <label className="studio-block-upload"><span>{uploadingBlock === block.id ? 'Uploading…' : block.imageUrl ? 'Replace screenshot' : 'Upload screenshot'}</span><input type="file" accept="image/png,image/jpeg,image/webp" disabled={Boolean(uploadingBlock)} onChange={(event) => uploadBlockImage(block, event)} /><UploadCloud /></label>
                   <label htmlFor={`project-image-heading-${block.id}`}>Screenshot heading <small>Optional</small><input id={`project-image-heading-${block.id}`} value={block.imageHeading || ''} onChange={(event) => updateBlock(block.id, { imageHeading: event.target.value })} placeholder="What should viewers notice?" /></label>
@@ -253,7 +266,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
           <label className="studio-switch full"><input name="showOnProjects" type="checkbox" defaultChecked={Boolean(project.showOnProjects)} /><span /><div><strong>Show on Projects page</strong><small>Display this card in the public project collection.</small></div></label>
           <label className="studio-switch full"><input name="published" type="checkbox" defaultChecked={Boolean(project.published)} /><span /><div><strong>Published</strong><small>Draft projects remain available only inside the admin panel.</small></div></label>
         </div>
-        <div className="studio-editor-foot"><span aria-live="polite">{status}</span><button className="studio-save" type="submit" disabled={Boolean(uploadingBlock)}>{project.id ? 'Update project' : 'Publish project'}</button></div>
+        <div className="studio-editor-foot"><span aria-live="polite">{status || (dirty ? 'Unsaved changes' : 'All changes saved')}</span><button className="studio-save" type="submit" disabled={Boolean(uploadingBlock)}>{project.id ? 'Update project' : 'Publish project'}</button></div>
       </form>
     </div>
   </>;

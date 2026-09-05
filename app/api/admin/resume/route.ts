@@ -2,6 +2,7 @@ import { env } from 'cloudflare:workers';
 import { NextResponse } from 'next/server';
 import { requireAdminApi } from '@/lib/admin';
 import { ensureContentTables } from '@/lib/content';
+import { hasJsonContentType, noStoreHeaders, sameOriginRequest } from '@/lib/request-security';
 
 type ResumePayload = {
   resumeUrl?: string;
@@ -10,7 +11,9 @@ type ResumePayload = {
 };
 
 export async function PUT(request: Request) {
-  if (!await requireAdminApi()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!sameOriginRequest(request)) return NextResponse.json({ error: 'Invalid request' }, { status: 403, headers: noStoreHeaders() });
+  if (!hasJsonContentType(request)) return NextResponse.json({ error: 'Invalid request' }, { status: 415, headers: noStoreHeaders() });
+  if (!await requireAdminApi()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: noStoreHeaders() });
   await ensureContentTables();
   const payload = await request.json() as ResumePayload;
   const resumeUrl = payload.resumeUrl?.trim();
@@ -27,5 +30,5 @@ export async function PUT(request: Request) {
     VALUES (1,?,?,?,CURRENT_TIMESTAMP)
     ON CONFLICT(id) DO UPDATE SET resume_url=excluded.resume_url,file_name=excluded.file_name,
     button_label=excluded.button_label,updated_at=CURRENT_TIMESTAMP`).bind(resumeUrl, fileName, buttonLabel).run();
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true }, { headers: noStoreHeaders() });
 }

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
-import { BarChart3, BookOpenText, BriefcaseBusiness, ExternalLink, FileUser, Gauge, Inbox, LogOut, Menu, Settings2, X } from 'lucide-react';
+import { BookOpenText, BriefcaseBusiness, ExternalLink, FileUser, Gauge, Inbox, LogOut, Menu, Settings2, X } from 'lucide-react';
 import type { AdminCounts } from '@/lib/admin-data';
 
 const nav = [
@@ -12,7 +12,6 @@ const nav = [
   { href: '/admin/resume', label: 'Resume', icon: FileUser, key: null },
   { href: '/admin/blog', label: 'Blog', icon: BookOpenText, key: 'posts' as const },
   { href: '/admin/enquiries', label: 'Enquiries', icon: Inbox, key: 'newEnquiries' as const },
-  { href: '/admin/analytics', label: 'Analytics', icon: BarChart3, key: 'visitors' as const },
 ];
 
 export default function AdminShell({ counts, eyebrow, title, description, actions, children }: {

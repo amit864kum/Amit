@@ -108,3 +108,10 @@ export const passwordResetCodes = sqliteTable('password_reset_codes', {
   consumedAt: text('consumed_at'),
   requestedAt: text('requested_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [index('idx_password_resets_user_time').on(table.username, table.requestedAt)]);
+
+export const rateLimits = sqliteTable('rate_limits', {
+  key: text('key').primaryKey(),
+  windowStart: integer('window_start').notNull(),
+  count: integer('count').notNull().default(0),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [index('idx_rate_limits_updated').on(table.updatedAt)]);
