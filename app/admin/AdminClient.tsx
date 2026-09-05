@@ -3,10 +3,11 @@ import Link from 'next/link';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Post, Project } from '@/lib/content';
+import { uploadAdminFile } from '@/lib/admin-upload-client';
 
 export type AdminMessage = { id: number; name: string; email: string; service: string; budget: string | null; message: string; createdAt: string; status: string };
 const emptyProject: Project = { id: 0, slug: '', title: '', category: '', summary: '', body: '', contentJson: null, tech: '', year: new Date().getFullYear().toString(), imageUrl: '', projectUrl: '', githubUrl: '', featured: 0, destination: 'case_study', published: 1, showOnProjects: 1, detailJson: null, displayOrder: 0 };
-const emptyPost: Post = { id: 0, slug: '', title: '', excerpt: '', body: '', category: 'Engineering', imageUrl: '', featured: 0, publishedAt: new Date().toISOString().slice(0,10), published: 1 };
+const emptyPost: Post = { id: 0, slug: '', title: '', excerpt: '', body: '', contentJson: null, category: 'Engineering', imageUrl: '', featured: 0, publishedAt: new Date().toISOString().slice(0,10), published: 1 };
 
 export default function AdminClient({ projects, posts, messages }: { projects: Project[]; posts: Post[]; messages: AdminMessage[] }) {
   const router = useRouter();
@@ -17,17 +18,10 @@ export default function AdminClient({ projects, posts, messages }: { projects: P
   const [inlineUploadBusy, setInlineUploadBusy] = useState(false);
   const articleBodyRef = useRef<HTMLTextAreaElement>(null);
 
-  async function uploadImage(file: File | undefined, currentUrl?: string | null) {
-    if (!file || !file.size) return currentUrl || null;
-    const body = new FormData(); body.set('file', file);
-    const response = await fetch('/api/admin/upload', { method: 'POST', body });
-    if (!response.ok) throw new Error('Upload failed');
-    return ((await response.json()) as { url: string }).url;
-  }
   async function saveProject(form: FormData) {
     setStatus('Saving project…');
     try {
-      const imageUrl = await uploadImage(form.get('image') as File, project.imageUrl);
+      const imageUrl = await uploadAdminFile(form.get('image') as File, project.imageUrl);
       const body = Object.fromEntries(form.entries()); delete body.image;
       const response = await fetch('/api/admin/projects', { method: project.id ? 'PATCH' : 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, id: project.id, imageUrl, featured: form.get('featured') ? 1 : 0 }) });
       if (!response.ok) throw new Error('Save failed');
@@ -37,7 +31,7 @@ export default function AdminClient({ projects, posts, messages }: { projects: P
   async function savePost(form: FormData) {
     setStatus('Saving post…');
     try {
-      const imageUrl = form.get('removeImage') ? null : await uploadImage(form.get('image') as File, post.imageUrl);
+      const imageUrl = form.get('removeImage') ? null : await uploadAdminFile(form.get('image') as File, post.imageUrl);
       const body = Object.fromEntries(form.entries()); delete body.image; delete body.removeImage;
       const response = await fetch('/api/admin/posts', { method: post.id ? 'PATCH' : 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, id: post.id, imageUrl, featured: form.get('featured') ? 1 : 0, published: form.get('published') ? 1 : 0 }) });
       if (!response.ok) throw new Error('Save failed');
@@ -54,7 +48,7 @@ export default function AdminClient({ projects, posts, messages }: { projects: P
     try {
       const snippets: string[] = [];
       for (const file of files) {
-        const url = await uploadImage(file);
+        const url = await uploadAdminFile(file);
         if (!url) continue;
         const alt = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').replace(/[\[\]()]/g, '').trim() || 'Article image';
         snippets.push(`![${alt}](${url})`);

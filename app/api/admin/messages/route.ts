@@ -1,5 +1,5 @@
-import { env } from 'cloudflare:workers';
 import { NextResponse } from 'next/server';
+import { database } from '@/db';
 import { requireAdminApi } from '@/lib/admin';
 import { ensureContentTables } from '@/lib/content';
 import { hasJsonContentType, noStoreHeaders, sameOriginRequest } from '@/lib/request-security';
@@ -11,6 +11,6 @@ export async function PATCH(request: Request) {
   await ensureContentTables();
   const body = await request.json().catch(() => null) as { id?: number; status?: string } | null;
   if (!body?.id || !['new', 'replied', 'archived'].includes(body.status || '')) return NextResponse.json({ error: 'Invalid enquiry update.' }, { status: 400 });
-  await env.DB.prepare('UPDATE contact_messages SET status=? WHERE id=?').bind(body.status, body.id).run();
+  await database.prepare('UPDATE contact_messages SET status=? WHERE id=?').bind(body.status, body.id).run();
   return NextResponse.json({ ok: true }, { headers: noStoreHeaders() });
 }

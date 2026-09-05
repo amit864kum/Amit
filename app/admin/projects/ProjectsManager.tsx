@@ -9,6 +9,7 @@ import { articleBlocks, type ArticleBlock } from '@/lib/blog';
 import { toProjectSlug } from '@/lib/slug';
 import { projectDetails, type ProjectDetailSettings } from '@/lib/project-details';
 import { useUnsavedChanges } from '@/app/admin/_components/useUnsavedChanges';
+import { uploadAdminFile } from '@/lib/admin-upload-client';
 
 const blank: Project = { id: 0, slug: '', title: '', category: '', summary: '', body: '', contentJson: null, tech: '', year: new Date().getFullYear().toString(), imageUrl: '', projectUrl: '', githubUrl: '', featured: 0, destination: 'case_study', published: 1, showOnProjects: 1, detailJson: null, displayOrder: 0 };
 
@@ -51,15 +52,6 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
   const featured = orderedProjects.filter((item) => item.featured).length;
   const categories = new Set(orderedProjects.map((item) => item.category)).size;
   const detailSettings = projectDetails(project.detailJson);
-
-  async function upload(file: File | null | undefined, current?: string | null) {
-    if (!file?.size) return current || null;
-    const body = new FormData();
-    body.set('file', file);
-    const response = await fetch('/api/admin/upload', { method: 'POST', body });
-    if (!response.ok) throw new Error('Upload failed');
-    return ((await response.json()) as { url: string }).url;
-  }
 
   useUnsavedChanges(dirty);
   function markDirty() { setDirty(true); setStatus(''); }
@@ -116,7 +108,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
     setUploadingBlock(block.id);
     setStatus('Uploading project screenshot…');
     try {
-      const imageUrl = await upload(file);
+      const imageUrl = await uploadAdminFile(file);
       updateBlock(block.id, { imageUrl: imageUrl || '', alt: block.alt || file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ') });
       setStatus('Screenshot added. Add its heading, details, and alt text.');
     } catch {
@@ -143,7 +135,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
     }
     setStatus('Saving project…');
     try {
-      const imageUrl = formData.get('removeImage') ? null : await upload(formData.get('image') as File, project.imageUrl);
+      const imageUrl = formData.get('removeImage') ? null : await uploadAdminFile(formData.get('image') as File, project.imageUrl);
       const fields = Object.fromEntries(formData.entries());
       delete fields.image;
       delete fields.removeImage;
@@ -207,7 +199,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
       </section>
 
       <form id="project-editor" className="studio-editor studio-post-editor" action={save} onChange={markDirty} key={`${project.id}-${editorVersion}`}>
-        <div className="studio-section-title"><div><small>{project.id ? 'Editing record' : 'New record'}</small><h2>{project.id ? project.title : 'Build a project story'}</h2></div>{project.id ? <button type="button" onClick={resetEditor}>Clear</button> : <ImagePlus />}</div>
+        <div className="studio-section-title"><div><small>{project.id ? 'Editing record' : 'New record'}</small><h2>{project.id ? project.title : 'Build a project story'}</h2></div>{project.id ? <button type="button" onClick={() => resetEditor()}>Clear</button> : <ImagePlus />}</div>
         <div className="studio-form-grid studio-post-meta">
           <label className="full">Project title<input name="title" required defaultValue={project.title} /></label>
           <label>URL slug<input name="slug" required defaultValue={project.slug} placeholder="thermal-fluid-and-transport-laboratory" autoCapitalize="none" /><small>Spaces and capital letters are converted automatically.</small></label>

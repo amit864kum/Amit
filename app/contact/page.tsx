@@ -23,8 +23,7 @@ export default function ContactPage() {
       <aside className="contact-intake-aside">
         <p className="contact-intake-kicker"><span />Start a conversation</p>
         <h2 id="intake-title">Let&apos;s shape<br /><em>something useful.</em></h2>
-        <p className="contact-intake-copy">Share the idea, challenge, or outcome you have in mind. A clear starting point is enough—we can shape the details together.</p>
-        <ul className="contact-intake-tags" aria-label="Areas of collaboration"><li>Full-stack</li><li>Product design</li><li>Blockchain</li><li>Research</li></ul>
+        <p className="contact-intake-copy">Leave your name, email, and preferred contact details. That is all I need to start the conversation.</p>
         <dl>
           <div><dt><Clock3 aria-hidden="true" /> Response</dt><dd>Within two working days</dd></div>
           <div><dt><Mail aria-hidden="true" /> Prefer email?</dt><dd><a href="mailto:amitkumarabhinav59@gmail.com">Write directly <ArrowUpRight aria-hidden="true" /></a></dd></div>

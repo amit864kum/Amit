@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
-import { env } from 'cloudflare:workers';
+import { revalidatePath } from 'next/cache';
+import { database } from '@/db';
 import { requireAdminApi } from '@/lib/admin';
 import { ensureContentTables } from '@/lib/content';
 import { articleBlocks } from '@/lib/blog';
 import { toProjectSlug } from '@/lib/slug';
 import { projectDetails, type ProjectDestination } from '@/lib/project-details';
 import { hasJsonContentType, noStoreHeaders, sameOriginRequest } from '@/lib/request-security';
+import { deleteManagedBlobsIfUnreferenced, managedBlobUrls } from '@/lib/blob-storage';
 
 type ProjectPayload = {
   id?: number; slug: string; title: string; category: string; summary: string;
@@ -56,23 +58,25 @@ export async function POST(request: Request) {
   catch { return NextResponse.json({ error: 'Invalid project content' }, { status: 400 }); }
   const slug = toProjectSlug(p.slug || p.title);
   if (!slug) return NextResponse.json({ error: 'A valid project title or slug is required' }, { status: 400 });
-  const order = await env.DB.prepare('SELECT COALESCE(MAX(display_order), -1) + 1 AS nextOrder FROM projects').first<{ nextOrder: number }>();
+  const order = await database.prepare('SELECT COALESCE(MAX(display_order), -1) + 1 AS "nextOrder" FROM projects').first<{ nextOrder: number }>();
   try {
-    await env.DB.prepare('INSERT INTO projects (slug,title,category,summary,body,content_json,tech,year,image_url,project_url,github_url,featured,destination,published,show_on_projects,detail_json,display_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(slug,p.title,p.category,p.summary,p.body,contentJson,p.tech,p.year,p.imageUrl||null,p.projectUrl||null,p.githubUrl||null,p.featured?1:0,destination,p.published?1:0,p.showOnProjects?1:0,detailJson,order?.nextOrder ?? 0).run();
+    await database.prepare('INSERT INTO projects (slug,title,category,summary,body,content_json,tech,year,image_url,project_url,github_url,featured,destination,published,show_on_projects,detail_json,display_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(slug,p.title,p.category,p.summary,p.body,contentJson,p.tech,p.year,p.imageUrl||null,p.projectUrl||null,p.githubUrl||null,p.featured?1:0,destination,p.published?1:0,p.showOnProjects?1:0,detailJson,order?.nextOrder ?? 0).run();
   } catch (error) {
     if (String(error).toLowerCase().includes('unique')) return NextResponse.json({ error: 'This project URL slug is already in use' }, { status: 409 });
     throw error;
   }
+  revalidatePath('/', 'layout');
   return NextResponse.json({ ok: true });
 }
 export async function PATCH(request: Request) {
   if (!await authorized(request)) return NextResponse.json({ error: 'Unauthorized or invalid request' }, { status: 403, headers: noStoreHeaders() });
   const p = await request.json() as ProjectPayload;
+  const existingRecord = await database.prepare('SELECT image_url AS "imageUrl",content_json AS "contentJson",detail_json AS "detailJson" FROM projects WHERE id=?').bind(p.id).first<{ imageUrl: string | null; contentJson: string | null; detailJson: string | null }>();
+  if (!existingRecord) return NextResponse.json({ error: 'Project not found' }, { status: 404, headers: noStoreHeaders() });
   let contentJson: string | null; let detailJson: string | null; let destination: ProjectDestination;
   try {
     if (p.contentJson === undefined) {
-      const existing = await env.DB.prepare('SELECT content_json AS contentJson FROM projects WHERE id=?').bind(p.id).first<{ contentJson: string | null }>();
-      contentJson = existing?.contentJson ?? null;
+      contentJson = existingRecord.contentJson;
     } else contentJson = normalizeContent(p.contentJson);
     detailJson = normalizeDetails(p.detailJson);
     destination = normalizeDestination(p);
@@ -81,17 +85,24 @@ export async function PATCH(request: Request) {
   const slug = toProjectSlug(p.slug || p.title);
   if (!slug) return NextResponse.json({ error: 'A valid project title or slug is required' }, { status: 400 });
   try {
-    await env.DB.prepare('UPDATE projects SET slug=?,title=?,category=?,summary=?,body=?,content_json=?,tech=?,year=?,image_url=?,project_url=?,github_url=?,featured=?,destination=?,published=?,show_on_projects=?,detail_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(slug,p.title,p.category,p.summary,p.body,contentJson,p.tech,p.year,p.imageUrl||null,p.projectUrl||null,p.githubUrl||null,p.featured?1:0,destination,p.published?1:0,p.showOnProjects?1:0,detailJson,p.id).run();
+    await database.prepare('UPDATE projects SET slug=?,title=?,category=?,summary=?,body=?,content_json=?,tech=?,year=?,image_url=?,project_url=?,github_url=?,featured=?,destination=?,published=?,show_on_projects=?,detail_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(slug,p.title,p.category,p.summary,p.body,contentJson,p.tech,p.year,p.imageUrl||null,p.projectUrl||null,p.githubUrl||null,p.featured?1:0,destination,p.published?1:0,p.showOnProjects?1:0,detailJson,p.id).run();
   } catch (error) {
     if (String(error).toLowerCase().includes('unique')) return NextResponse.json({ error: 'This project URL slug is already in use' }, { status: 409 });
     throw error;
   }
+  const retained = managedBlobUrls(p.imageUrl, contentJson, detailJson);
+  const removed = [...managedBlobUrls(existingRecord.imageUrl, existingRecord.contentJson, existingRecord.detailJson)].filter((url) => !retained.has(url));
+  await deleteManagedBlobsIfUnreferenced(removed);
+  revalidatePath('/', 'layout');
   return NextResponse.json({ ok: true });
 }
 export async function DELETE(request: Request) {
   if (!await authorized(request)) return NextResponse.json({ error: 'Unauthorized or invalid request' }, { status: 403, headers: noStoreHeaders() });
   const { id } = await request.json() as { id: number };
-  await env.DB.prepare('DELETE FROM projects WHERE id=?').bind(id).run();
+  const existing = await database.prepare('SELECT image_url AS "imageUrl",content_json AS "contentJson",detail_json AS "detailJson" FROM projects WHERE id=?').bind(id).first<{ imageUrl: string | null; contentJson: string | null; detailJson: string | null }>();
+  await database.prepare('DELETE FROM projects WHERE id=?').bind(id).run();
+  if (existing) await deleteManagedBlobsIfUnreferenced(managedBlobUrls(existing.imageUrl, existing.contentJson, existing.detailJson));
+  revalidatePath('/', 'layout');
   return NextResponse.json({ ok: true });
 }
 
@@ -101,11 +112,12 @@ export async function PUT(request: Request) {
   if (!Array.isArray(ids) || !ids.length || ids.some((id) => !Number.isInteger(id)) || new Set(ids).size !== ids.length) {
     return NextResponse.json({ error: 'Invalid project order' }, { status: 400 });
   }
-  const existing = (await env.DB.prepare('SELECT id FROM projects').all<{ id: number }>()).results;
+  const existing = (await database.prepare('SELECT id FROM projects').all<{ id: number }>()).results;
   const existingIds = new Set(existing.map((item) => item.id));
   if (existingIds.size !== ids.length || ids.some((id) => !existingIds.has(id))) {
     return NextResponse.json({ error: 'Project list changed; refresh and try again' }, { status: 409 });
   }
-  await env.DB.batch(ids.map((id, index) => env.DB.prepare('UPDATE projects SET display_order=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(index, id)));
+  await database.batch(ids.map((id, index) => database.prepare('UPDATE projects SET display_order=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(index, id)));
+  revalidatePath('/', 'layout');
   return NextResponse.json({ ok: true });
 }

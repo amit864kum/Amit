@@ -1,0 +1,9 @@
+.wrangler/
+.migration-backup/
+.vinext/
+dist/
+drizzle/
+.dev.vars
+*.tsbuildinfo
+security_audit.md
+temp_plan.md

@@ -59,13 +59,13 @@ export default async function RootLayout({
 }>) {
   const nonce = (await headers()).get('x-csp-nonce') || undefined;
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-theme="light" suppressHydrationWarning>
       <head>
         <script
           nonce={nonce}
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: `(() => { try { const saved = localStorage.getItem('amit-theme'); const theme = saved === 'light' || saved === 'dark' ? saved : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'); document.documentElement.dataset.theme = theme; } catch { document.documentElement.dataset.theme = 'dark'; } })();`,
+            __html: `(() => { try { const saved = localStorage.getItem('amit-theme'); document.documentElement.dataset.theme = saved === 'light' || saved === 'dark' ? saved : 'light'; } catch { document.documentElement.dataset.theme = 'light'; } })();`,
           }}
         />
       </head>

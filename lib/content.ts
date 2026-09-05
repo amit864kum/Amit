@@ -1,6 +1,6 @@
-import { env } from 'cloudflare:workers';
 import type { ProjectDestination } from './project-details';
 import { decodePathSegment, toProjectSlug } from '@/lib/slug';
+import { database } from '@/db';
 
 export type Project = {
   id: number; slug: string; title: string; category: string; summary: string;
@@ -42,116 +42,52 @@ export function ensureContentTables() {
   return initialization;
 }
 async function initializeContentTables() {
-  const db = env.DB;
-  await db.batch([
-    db.prepare(`CREATE TABLE IF NOT EXISTS projects (
-      id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL,
-      category TEXT NOT NULL, summary TEXT NOT NULL, body TEXT NOT NULL, content_json TEXT, tech TEXT NOT NULL,
-      year TEXT NOT NULL, image_url TEXT, project_url TEXT, github_url TEXT,
-      featured INTEGER NOT NULL DEFAULT 0, destination TEXT NOT NULL DEFAULT 'case_study',
-      published INTEGER NOT NULL DEFAULT 1, show_on_projects INTEGER NOT NULL DEFAULT 1,
-      detail_json TEXT, display_order INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )`),
-    db.prepare(`CREATE TABLE IF NOT EXISTS posts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL,
-      excerpt TEXT NOT NULL, body TEXT NOT NULL, content_json TEXT, category TEXT NOT NULL DEFAULT 'Engineering',
-      image_url TEXT, featured INTEGER NOT NULL DEFAULT 0, published_at TEXT NOT NULL,
-      published INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )`),
-    db.prepare(`CREATE TABLE IF NOT EXISTS contact_messages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL,
-      service TEXT NOT NULL, budget TEXT, message TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, status TEXT NOT NULL DEFAULT 'new'
-    )`),
-    db.prepare(`CREATE TABLE IF NOT EXISTS resume_settings (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      resume_url TEXT NOT NULL DEFAULT '/resume-amit-kumar.pdf',
-      file_name TEXT NOT NULL DEFAULT 'resume-amit-kumar.pdf',
-      button_label TEXT NOT NULL DEFAULT 'Download résumé',
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )`),
-    db.prepare('CREATE INDEX IF NOT EXISTS idx_projects_featured ON projects(featured)'),
-    db.prepare('CREATE INDEX IF NOT EXISTS idx_posts_published_date ON posts(published, published_at)'),
-    db.prepare('CREATE INDEX IF NOT EXISTS idx_messages_status_date ON contact_messages(status, created_at)'),
-  ]);
-  const postColumnResult = await db.prepare('PRAGMA table_info(posts)').all<{ name: string }>();
-  const postColumns = new Set(postColumnResult.results.map((column) => column.name));
-  const postMigrations: D1PreparedStatement[] = [];
-  if (!postColumns.has('category')) postMigrations.push(db.prepare("ALTER TABLE posts ADD COLUMN category TEXT NOT NULL DEFAULT 'Engineering'"));
-  if (!postColumns.has('image_url')) postMigrations.push(db.prepare('ALTER TABLE posts ADD COLUMN image_url TEXT'));
-  if (!postColumns.has('featured')) postMigrations.push(db.prepare('ALTER TABLE posts ADD COLUMN featured INTEGER NOT NULL DEFAULT 0'));
-  if (!postColumns.has('content_json')) postMigrations.push(db.prepare('ALTER TABLE posts ADD COLUMN content_json TEXT'));
-  if (postMigrations.length) await db.batch(postMigrations);
-  await db.prepare('CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category)').run();
-  const projectColumnResult = await db.prepare('PRAGMA table_info(projects)').all<{ name: string }>();
-  const projectColumns = new Set(projectColumnResult.results.map((column) => column.name));
-  if (!projectColumns.has('content_json')) {
-    await db.prepare('ALTER TABLE projects ADD COLUMN content_json TEXT').run();
-  }
-  if (!projectColumns.has('display_order')) {
-    await db.prepare('ALTER TABLE projects ADD COLUMN display_order INTEGER NOT NULL DEFAULT 0').run();
-    await db.prepare(`UPDATE projects SET display_order = (
-      SELECT COUNT(*) FROM projects AS candidate
-      WHERE candidate.featured > projects.featured
-        OR (candidate.featured = projects.featured AND candidate.year > projects.year)
-        OR (candidate.featured = projects.featured AND candidate.year = projects.year AND candidate.id < projects.id)
-    )`).run();
-  }
-  if (!projectColumns.has('destination')) await db.prepare("ALTER TABLE projects ADD COLUMN destination TEXT NOT NULL DEFAULT 'case_study'").run();
-  if (!projectColumns.has('published')) await db.prepare('ALTER TABLE projects ADD COLUMN published INTEGER NOT NULL DEFAULT 1').run();
-  if (!projectColumns.has('show_on_projects')) await db.prepare('ALTER TABLE projects ADD COLUMN show_on_projects INTEGER NOT NULL DEFAULT 1').run();
-  if (!projectColumns.has('detail_json')) await db.prepare('ALTER TABLE projects ADD COLUMN detail_json TEXT').run();
-  await db.prepare('CREATE INDEX IF NOT EXISTS idx_projects_display_order ON projects(display_order)').run();
-  await db.prepare('CREATE INDEX IF NOT EXISTS idx_projects_public_order ON projects(published,show_on_projects,display_order)').run();
-  await db.prepare(`INSERT OR IGNORE INTO resume_settings (id,resume_url,file_name,button_label)
-    VALUES (1,'/resume-amit-kumar.pdf','resume-amit-kumar.pdf','Download résumé')`).run();
-  const projectCount = await db.prepare('SELECT COUNT(*) AS count FROM projects').first<{ count: number }>();
+  await database.prepare(`INSERT INTO resume_settings (id,resume_url,file_name,button_label)
+    VALUES (1,'/resume-amit-kumar.pdf','resume-amit-kumar.pdf','Download résumé')
+    ON CONFLICT (id) DO NOTHING`).run();
+  const projectCount = await database.prepare('SELECT COUNT(*)::int AS count FROM projects').first<{ count: number }>();
   if (!projectCount?.count) {
-    await db.batch(seedProjects.map((p, index) => db.prepare(
-      'INSERT INTO projects (slug,title,category,summary,body,tech,year,project_url,featured,display_order) VALUES (?,?,?,?,?,?,?,?,?,?)',
+    await database.batch(seedProjects.map((p, index) => database.prepare(
+      'INSERT INTO projects (slug,title,category,summary,body,tech,year,project_url,featured,display_order) VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT (slug) DO NOTHING',
     ).bind(...p, index)));
   }
-  const postCount = await db.prepare('SELECT COUNT(*) AS count FROM posts').first<{ count: number }>();
+  const postCount = await database.prepare('SELECT COUNT(*)::int AS count FROM posts').first<{ count: number }>();
   if (!postCount?.count) {
-    await db.batch(seedPosts.map((p) => db.prepare(
-      'INSERT INTO posts (slug,title,excerpt,body,category,published_at,featured,published) VALUES (?,?,?,?,?,?,?,1)',
+    await database.batch(seedPosts.map((p) => database.prepare(
+      'INSERT INTO posts (slug,title,excerpt,body,category,published_at,featured,published) VALUES (?,?,?,?,?,?,?,1) ON CONFLICT (slug) DO NOTHING',
     ).bind(...p)));
   }
-  await db.batch([
-    db.prepare("UPDATE posts SET category='Blockchain & Product', featured=1 WHERE slug='designing-trust-in-blockchain-products' AND category='Engineering'"),
-    db.prepare("UPDATE posts SET category='Engineering Practice' WHERE slug='research-to-reliable-product' AND category='Engineering'"),
+  await database.batch([
+    database.prepare("UPDATE posts SET category='Blockchain & Product', featured=1 WHERE slug='designing-trust-in-blockchain-products' AND category='Engineering'"),
+    database.prepare("UPDATE posts SET category='Engineering Practice' WHERE slug='research-to-reliable-product' AND category='Engineering'"),
   ]);
-  await db.prepare('PRAGMA optimize').run();
 }
 
-const projectSelect = 'SELECT id,slug,title,category,summary,body,content_json AS contentJson,tech,year,image_url AS imageUrl,project_url AS projectUrl,github_url AS githubUrl,featured,destination,published,show_on_projects AS showOnProjects,detail_json AS detailJson,display_order AS displayOrder FROM projects';
+const projectSelect = 'SELECT id,slug,title,category,summary,body,content_json AS "contentJson",tech,year,image_url AS "imageUrl",project_url AS "projectUrl",github_url AS "githubUrl",featured,destination,published,show_on_projects AS "showOnProjects",detail_json AS "detailJson",display_order AS "displayOrder" FROM projects';
 
 export async function getProjects(featuredOnly = false): Promise<Project[]> {
   await ensureContentTables();
   const query = featuredOnly
     ? `${projectSelect} WHERE published=1 AND featured=1 ORDER BY display_order,id`
     : `${projectSelect} WHERE published=1 AND show_on_projects=1 ORDER BY display_order,id`;
-  return (await env.DB.prepare(query).all<Project>()).results;
+  return (await database.prepare(query).all<Project>()).results;
 }
 export async function getAdminProjects(): Promise<Project[]> {
   await ensureContentTables();
-  return (await env.DB.prepare(`${projectSelect} ORDER BY display_order,id`).all<Project>()).results;
+  return (await database.prepare(`${projectSelect} ORDER BY display_order,id`).all<Project>()).results;
 }
 export async function getProject(slug: string, adminPreview = false): Promise<Project | null> {
   await ensureContentTables();
   const decodedSlug = decodePathSegment(slug);
   const visibility = adminPreview ? '' : " AND published=1 AND destination='case_study'";
-  const exact = await env.DB.prepare(`${projectSelect} WHERE (slug = ? OR slug = ?)${visibility} LIMIT 1`).bind(slug, decodedSlug).first<Project>();
+  const exact = await database.prepare(`${projectSelect} WHERE (slug = ? OR slug = ?)${visibility} LIMIT 1`).bind(slug, decodedSlug).first<Project>();
   if (exact) return exact;
 
   // Older admin records may contain a title or spaces instead of a URL-safe slug.
   // Keep those links working while all newly saved records use canonical slugs.
   const requestedCanonical = toProjectSlug(decodedSlug);
   if (!requestedCanonical) return null;
-  const projects = (await env.DB.prepare(`${projectSelect}${adminPreview ? '' : " WHERE published=1 AND destination='case_study'"}`).all<Project>()).results;
+  const projects = (await database.prepare(`${projectSelect}${adminPreview ? '' : " WHERE published=1 AND destination='case_study'"}`).all<Project>()).results;
   return projects.find((project) =>
     toProjectSlug(project.slug) === requestedCanonical
     || toProjectSlug(project.title) === requestedCanonical,
@@ -159,13 +95,13 @@ export async function getProject(slug: string, adminPreview = false): Promise<Pr
 }
 export async function getProjectCount(): Promise<number> {
   await ensureContentTables();
-  const row = await env.DB.prepare('SELECT COUNT(*) AS count FROM projects WHERE published=1').first<{ count: number }>();
+  const row = await database.prepare('SELECT COUNT(*)::int AS count FROM projects WHERE published=1').first<{ count: number }>();
   return Number(row?.count || 0);
 }
 export async function getResumeSettings(): Promise<ResumeSettings> {
   await ensureContentTables();
-  const row = await env.DB.prepare(`SELECT resume_url AS resumeUrl,file_name AS fileName,
-    button_label AS buttonLabel,updated_at AS updatedAt FROM resume_settings WHERE id=1`).first<ResumeSettings>();
+  const row = await database.prepare(`SELECT resume_url AS "resumeUrl",file_name AS "fileName",
+    button_label AS "buttonLabel",updated_at AS "updatedAt" FROM resume_settings WHERE id=1`).first<ResumeSettings>();
   return row || {
     resumeUrl: '/resume-amit-kumar.pdf',
     fileName: 'resume-amit-kumar.pdf',
@@ -176,9 +112,9 @@ export async function getResumeSettings(): Promise<ResumeSettings> {
 export async function getPosts(includeDrafts = false): Promise<Post[]> {
   await ensureContentTables();
   const where = includeDrafts ? '' : 'WHERE published = 1';
-  return (await env.DB.prepare('SELECT id,slug,title,excerpt,body,content_json AS contentJson,category,image_url AS imageUrl,featured,published_at AS publishedAt,published FROM posts ' + where + ' ORDER BY featured DESC,published_at DESC,id DESC').all<Post>()).results;
+  return (await database.prepare('SELECT id,slug,title,excerpt,body,content_json AS "contentJson",category,image_url AS "imageUrl",featured,published_at AS "publishedAt",published FROM posts ' + where + ' ORDER BY featured DESC,published_at DESC,id DESC').all<Post>()).results;
 }
 export async function getPost(slug: string): Promise<Post | null> {
   await ensureContentTables();
-  return env.DB.prepare('SELECT id,slug,title,excerpt,body,content_json AS contentJson,category,image_url AS imageUrl,featured,published_at AS publishedAt,published FROM posts WHERE slug = ? AND published = 1').bind(slug).first<Post>();
+  return database.prepare('SELECT id,slug,title,excerpt,body,content_json AS "contentJson",category,image_url AS "imageUrl",featured,published_at AS "publishedAt",published FROM posts WHERE slug = ? AND published = 1').bind(slug).first<Post>();
 }

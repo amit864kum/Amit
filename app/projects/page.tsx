@@ -72,11 +72,7 @@ export default async function ProjectsPage() {
             <p><span aria-hidden="true" /> Available for select collaborations</p>
           </div>
         </div>
-      </section>
 
-      <ProjectExplorer projects={projects} />
-
-      <section className="projects-process" aria-label="Working approach">
         <aside className="projects-hero-dashboard" aria-label="How I work and areas of focus">
           <section className="projects-method-panel" aria-labelledby="projects-method-heading">
             <header>
@@ -132,6 +128,7 @@ export default async function ProjectsPage() {
           </div>
         </aside>
       </section>
+      <ProjectExplorer projects={projects} />
       <SiteFooter />
     </main>
   );

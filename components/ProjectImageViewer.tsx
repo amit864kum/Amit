@@ -46,7 +46,7 @@ export default function ProjectImageViewer({ src, alt }: ProjectImageViewerProps
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = previousOverflow;
       if (!wasInert) page?.removeAttribute('inert');
-      if (previousAriaHidden === null) page?.removeAttribute('aria-hidden');
+      if (previousAriaHidden == null) page?.removeAttribute('aria-hidden');
       else page?.setAttribute('aria-hidden', previousAriaHidden);
       trigger?.focus();
     };

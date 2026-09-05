@@ -1,5 +1,5 @@
-import { env } from 'cloudflare:workers';
 import { NextResponse } from 'next/server';
+import { database } from '@/db';
 import { sendContactNotification } from '@/lib/contact-email';
 import { ensureContentTables } from '@/lib/content';
 import {
@@ -11,13 +11,6 @@ import {
   verifyTurnstile,
 } from '@/lib/request-security';
 
-const services = new Set([
-  'Full-stack development',
-  'Blockchain product',
-  'Portfolio or brand website',
-  'Technical consulting',
-]);
-const budgets = new Set(['', 'Under ₹50,000', '₹50,000–₹1,50,000', '₹1,50,000+']);
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
 
 function json(payload: Record<string, unknown>, status = 200, headers?: HeadersInit) {
@@ -41,23 +34,18 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const name = String(form.get('name') || '').trim();
     const email = String(form.get('email') || '').trim().toLowerCase();
-    const service = String(form.get('service') || '').trim();
-    const budget = String(form.get('budget') || '').trim();
-    const message = String(form.get('message') || '').trim();
+    const contactDetails = String(form.get('contactDetails') || '').trim();
     const honeypot = String(form.get('website') || '').trim();
     const startedAt = String(form.get('startedAt') || '');
     const turnstileToken = String(form.get('cf-turnstile-response') || '');
-    const customService = service.startsWith('Other: ') && service.slice(7).trim().length >= 10 && service.length <= 160;
-    const validService = services.has(service) || customService;
 
-    if (honeypot || !validSubmissionTiming(startedAt) || looksLikeSpam([name, email, service, message])) {
+    if (honeypot || !validSubmissionTiming(startedAt) || looksLikeSpam([name, email, contactDetails])) {
       return json({ error: 'The request could not be verified.' }, 400);
     }
     if (
       name.length < 2 || name.length > 80
       || !emailPattern.test(email) || email.length > 120
-      || !validService || !budgets.has(budget)
-      || message.length < 20 || message.length > 3000
+      || contactDetails.length < 5 || contactDetails.length > 1000
     ) {
       return json({ error: 'Please review the highlighted information and try again.' }, 400);
     }
@@ -66,9 +54,9 @@ export async function POST(request: Request) {
     if (!challenge.success) return json({ error: 'Bot verification failed. Please refresh and try again.' }, 403);
 
     await ensureContentTables();
-    await env.DB.prepare('INSERT INTO contact_messages (name,email,service,budget,message) VALUES (?,?,?,?,?)')
-      .bind(name, email, service, budget, message).run();
-    const notification = await sendContactNotification({ name, email, service, budget, message });
+    await database.prepare('INSERT INTO contact_messages (name,email,contact_details,service,budget,message) VALUES (?,?,?,?,?,?)')
+      .bind(name, email, contactDetails, 'Direct enquiry', '', contactDetails).run();
+    const notification = await sendContactNotification({ name, email, contactDetails });
     return json({ ok: true, notification: notification.delivered ? 'delivered' : 'admin_inbox' });
   } catch {
     return json({ error: 'The enquiry could not be processed. Please try again shortly.' }, 500);

@@ -1,6 +1,6 @@
 import { config } from '@/lib/env';
 
-type Enquiry = { name: string; email: string; service: string; budget: string; message: string };
+type Enquiry = { name: string; email: string; contactDetails: string };
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (character) => ({
@@ -25,8 +25,8 @@ export async function sendContactNotification(enquiry: Enquiry) {
         from,
         to: [to],
         reply_to: enquiry.email,
-        subject: `New portfolio enquiry: ${enquiry.service}`,
-        html: `<div style="font-family:Arial,sans-serif;max-width:640px;margin:auto;padding:32px"><p style="color:#6b7280">AMIT KUMAR PORTFOLIO</p><h1>New project enquiry</h1><p><strong>From:</strong> ${escapeHtml(enquiry.name)} (${escapeHtml(enquiry.email)})</p><p><strong>Service:</strong> ${escapeHtml(enquiry.service)}</p><p><strong>Budget:</strong> ${escapeHtml(enquiry.budget || 'Not provided')}</p><hr><p style="white-space:pre-wrap">${escapeHtml(enquiry.message)}</p></div>`,
+        subject: `New portfolio enquiry from ${enquiry.name}`,
+        html: `<div style="font-family:Arial,sans-serif;max-width:640px;margin:auto;padding:32px"><p style="color:#6b7280">AMIT KUMAR PORTFOLIO</p><h1>New enquiry</h1><p><strong>Name:</strong> ${escapeHtml(enquiry.name)}</p><p><strong>Email:</strong> ${escapeHtml(enquiry.email)}</p><hr><p><strong>Contact details</strong></p><p style="white-space:pre-wrap">${escapeHtml(enquiry.contactDetails)}</p></div>`,
       }),
       signal: AbortSignal.timeout(7000),
     });

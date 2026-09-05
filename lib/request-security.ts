@@ -1,37 +1,13 @@
-import { env } from 'cloudflare:workers';
 import { config } from '@/lib/env';
+import { database } from '@/db';
 
 type RateLimitOptions = { scope: string; limit: number; windowSeconds: number };
 
-let rateLimitInitialization: Promise<void> | null = null;
-
-async function ensureRateLimitTable() {
-  if (!rateLimitInitialization) {
-    rateLimitInitialization = env.DB.batch([
-      env.DB.prepare(`CREATE TABLE IF NOT EXISTS rate_limits (
-        key TEXT PRIMARY KEY,
-        window_start INTEGER NOT NULL,
-        count INTEGER NOT NULL DEFAULT 0,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )`),
-      env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_rate_limits_updated ON rate_limits(updated_at)'),
-    ]).then(() => undefined).catch((error) => {
-      rateLimitInitialization = null;
-      throw error;
-    });
-  }
-  return rateLimitInitialization;
-}
-
 function requestAddress(request: Request) {
-  const cloudflareAddress = request.headers.get('cf-connecting-ip');
-  if (cloudflareAddress) return cloudflareAddress;
-  if (process.env.NODE_ENV !== 'production') {
-    return request.headers.get('x-real-ip')
-      || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      || 'local';
-  }
-  return 'unknown';
+  return request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim()
+    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || request.headers.get('x-real-ip')
+    || (process.env.NODE_ENV !== 'production' ? 'local' : 'unknown');
 }
 
 function toBase64Url(bytes: Uint8Array) {
@@ -54,20 +30,17 @@ async function identifier(request: Request, scope: string) {
 }
 
 export async function rateLimit(request: Request, options: RateLimitOptions) {
-  await ensureRateLimitTable();
-  await env.DB.prepare(`DELETE FROM rate_limits WHERE key IN (
-    SELECT key FROM rate_limits WHERE datetime(updated_at) < datetime('now', '-1 day') LIMIT 100
-  )`).run();
+  await database.prepare("DELETE FROM rate_limits WHERE updated_at < NOW() - INTERVAL '1 day'").run();
   const key = await identifier(request, options.scope);
   const now = Math.floor(Date.now() / 1000);
   const resetBefore = now - options.windowSeconds;
-  const row = await env.DB.prepare(`INSERT INTO rate_limits (key,window_start,count,updated_at)
+  const row = await database.prepare(`INSERT INTO rate_limits (key,window_start,count,updated_at)
     VALUES (?, ?, 1, CURRENT_TIMESTAMP)
     ON CONFLICT(key) DO UPDATE SET
       count=CASE WHEN rate_limits.window_start <= ? THEN 1 ELSE rate_limits.count + 1 END,
       window_start=CASE WHEN rate_limits.window_start <= ? THEN excluded.window_start ELSE rate_limits.window_start END,
       updated_at=CURRENT_TIMESTAMP
-    RETURNING count,window_start AS windowStart`).bind(key, now, resetBefore, resetBefore)
+    RETURNING count,window_start AS "windowStart"`).bind(key, now, resetBefore, resetBefore)
     .first<{ count: number; windowStart: number }>();
   const count = Number(row?.count || 1);
   const windowStart = Number(row?.windowStart || now);
@@ -81,9 +54,14 @@ export async function rateLimit(request: Request, options: RateLimitOptions) {
 export function sameOriginRequest(request: Request) {
   const origin = request.headers.get('origin');
   const fetchSite = request.headers.get('sec-fetch-site');
-  if (!origin) return fetchSite === 'same-origin';
-  try { return new URL(origin).origin === new URL(request.url).origin; }
-  catch { return false; }
+  if (fetchSite === 'same-origin') return true;
+  if (fetchSite && fetchSite !== 'none') return false;
+  if (!origin) return false;
+  try {
+    const requestOrigin = new URL(request.url).origin;
+    const configuredOrigin = config('SITE_URL');
+    return origin === requestOrigin || Boolean(configuredOrigin && origin === new URL(configuredOrigin).origin);
+  } catch { return false; }
 }
 
 export function hasJsonContentType(request: Request) {
@@ -106,7 +84,7 @@ export function noStoreHeaders(extra?: HeadersInit) {
 export function validSubmissionTiming(value: string) {
   const started = Number(value);
   const elapsed = Date.now() - started;
-  return Number.isFinite(started) && elapsed >= 2500 && elapsed <= 2 * 60 * 60 * 1000;
+  return Number.isFinite(started) && started > 0 && elapsed >= 0 && elapsed <= 2 * 60 * 60 * 1000;
 }
 
 export async function verifyTurnstile(token: string, request: Request) {
@@ -121,11 +99,12 @@ export async function verifyTurnstile(token: string, request: Request) {
       signal: AbortSignal.timeout(6000),
     });
     const result = await response.json() as { success?: boolean; action?: string; hostname?: string };
-    let expectedHostname = '';
-    try { expectedHostname = new URL(config('SITE_URL')).hostname; } catch { /* Invalid production config fails verification. */ }
+    const allowedHostnames = new Set<string>();
+    try { allowedHostnames.add(new URL(config('SITE_URL')).hostname); } catch { /* Optional when the browser origin is available. */ }
+    try { allowedHostnames.add(new URL(request.headers.get('origin') || '').hostname); } catch { /* Invalid origins fail verification. */ }
     return {
       required: true,
-      success: Boolean(result.success && result.action === 'contact' && expectedHostname && result.hostname === expectedHostname),
+      success: Boolean(result.success && result.action === 'contact' && result.hostname && allowedHostnames.has(result.hostname)),
     };
   } catch {
     return { required: true, success: false };

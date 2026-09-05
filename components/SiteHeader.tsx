@@ -22,7 +22,7 @@ export default function SiteHeader({ solid = false }: { solid?: boolean }) {
       <Link href="/" prefetch={false} className="brand" aria-label="Amit Kumar home">
         <span className="brand-mark"><Image src="/ak-mark.webp" alt="" width={44} height={44} priority /></span>
       </Link>
-      <nav aria-label="Primary navigation">
+      <nav className="primary-navigation" aria-label="Primary navigation">
         {navigation.map((item) => {
           const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href + '/'));
           return <Link href={item.href} prefetch={false} key={item.href} className={active ? 'active' : ''} aria-current={active ? 'page' : undefined}><span>{item.label}</span>{active && <motion.i layoutId="active-navigation" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />}</Link>;

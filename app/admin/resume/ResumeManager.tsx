@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { CheckCircle2, FileText, FolderKanban, RefreshCw, UploadCloud } from 'lucide-react';
 import type { ResumeSettings } from '@/lib/content';
+import { uploadAdminFile } from '@/lib/admin-upload-client';
 
 export default function ResumeManager({ resume, projectCount }: { resume: ResumeSettings; projectCount: number }) {
   const router = useRouter();
@@ -20,11 +21,7 @@ export default function ResumeManager({ resume, projectCount }: { resume: Resume
       let resumeUrl = resume.resumeUrl;
       let fileName = resume.fileName;
       if (file?.size) {
-        const upload = new FormData();
-        upload.set('file', file);
-        const uploadResponse = await fetch('/api/admin/upload', { method: 'POST', body: upload });
-        if (!uploadResponse.ok) throw new Error((await uploadResponse.json() as { error?: string }).error || 'Upload failed');
-        resumeUrl = (await uploadResponse.json() as { url: string }).url;
+        resumeUrl = await uploadAdminFile(file, resume.resumeUrl) || resume.resumeUrl;
         fileName = file.name;
       }
       const response = await fetch('/api/admin/resume', {

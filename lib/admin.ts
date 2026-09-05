@@ -1,16 +1,11 @@
-import { env } from 'cloudflare:workers';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getAdminPasswordHash, setAdminPasswordHash } from '@/lib/admin-security';
 import { hashPassword, hmacValue, passwordHashNeedsUpgrade, verifyPassword } from '@/lib/security-crypto';
+import { config } from '@/lib/env';
 
 export const ADMIN_COOKIE = 'amit_admin_session';
 const SESSION_SECONDS = 60 * 60 * 12;
-
-function config(name: 'ADMIN_USERNAME' | 'ADMIN_PASSWORD_HASH' | 'ADMIN_SESSION_SECRET') {
-  const runtime = env as unknown as Record<string, string | undefined>;
-  return runtime[name] ?? process.env[name] ?? '';
-}
 
 function bytesToBase64Url(bytes: Uint8Array) {
   let binary = '';

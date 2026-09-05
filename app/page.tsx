@@ -85,7 +85,7 @@ const stackLayers: StackLayer[] = [
 ];
 
 function StackToolIcon({ tool }: { tool: StackTool }) {
-  if ('imageSrc' in tool) {
+  if (typeof tool.imageSrc === 'string') {
     return <Image className="stack-brand-wordmark" src={tool.imageSrc} alt={tool.name} width={118} height={30} unoptimized />;
   }
   if ('symbol' in tool) return <span className="stack-protocol-icon" aria-hidden="true">{tool.symbol}</span>;

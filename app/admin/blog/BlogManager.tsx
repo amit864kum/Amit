@@ -7,6 +7,7 @@ import { useState, type ChangeEvent } from 'react';
 import type { Post } from '@/lib/content';
 import { articleBlocks, blocksToBody, type ArticleBlock } from '@/lib/blog';
 import { useUnsavedChanges } from '@/app/admin/_components/useUnsavedChanges';
+import { uploadAdminFile } from '@/lib/admin-upload-client';
 
 const blank: Post = { id: 0, slug: '', title: '', excerpt: '', body: '', contentJson: null, category: 'Engineering', imageUrl: '', featured: 0, publishedAt: new Date().toISOString().slice(0, 10), published: 1 };
 
@@ -28,15 +29,6 @@ export default function BlogManager({ posts }: { posts: Post[] }) {
   const [dirty, setDirty] = useState(false);
   const published = posts.filter((item) => item.published).length;
   const categories = new Set(posts.map((item) => item.category)).size;
-
-  async function upload(file: File | undefined, current?: string | null) {
-    if (!file?.size) return current || null;
-    const body = new FormData();
-    body.set('file', file);
-    const response = await fetch('/api/admin/upload', { method: 'POST', body });
-    if (!response.ok) throw new Error();
-    return ((await response.json()) as { url: string }).url;
-  }
 
   useUnsavedChanges(dirty);
   function markDirty() { setDirty(true); setStatus(''); }
@@ -93,7 +85,7 @@ export default function BlogManager({ posts }: { posts: Post[] }) {
     setUploadingBlock(block.id);
     setStatus('Uploading image…');
     try {
-      const imageUrl = await upload(file);
+      const imageUrl = await uploadAdminFile(file);
       updateBlock(block.id, { imageUrl: imageUrl || '', alt: block.alt || file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ') });
       setStatus('Image added to the article.');
     } catch {
@@ -116,7 +108,7 @@ export default function BlogManager({ posts }: { posts: Post[] }) {
     }
     setStatus('Saving article…');
     try {
-      const imageUrl = formData.get('removeImage') ? null : await upload(formData.get('image') as File, post.imageUrl);
+      const imageUrl = formData.get('removeImage') ? null : await uploadAdminFile(formData.get('image') as File, post.imageUrl);
       const fields = Object.fromEntries(formData.entries());
       delete fields.image;
       delete fields.removeImage;
@@ -155,7 +147,7 @@ export default function BlogManager({ posts }: { posts: Post[] }) {
       <section className="studio-records"><div className="studio-section-title"><div><small>Editorial library</small><h2>Articles</h2></div><span>{published} live</span></div><div className="studio-record-list">{posts.map((item, index) => <article key={item.id}><span className="studio-record-index">{String(index + 1).padStart(2, '0')}</span><div className="studio-record-copy"><div><small>{item.publishedAt} · {item.published ? 'Published' : 'Draft'}</small>{item.featured ? <b><Star /> Featured</b> : null}</div><h3>{item.title}</h3><p>{item.excerpt}</p><div className="studio-tech-preview"><span>{item.category}</span></div></div><div className="studio-record-actions"><a href={`/blog/${item.slug}`} target="_blank" aria-label={`View ${item.title}`}><ExternalLink /></a><button type="button" onClick={() => editPost(item)} aria-label={`Edit ${item.title}`}><Edit3 /></button><button type="button" className="danger" onClick={() => remove(item.id)} aria-label={`Delete ${item.title}`}><Trash2 /></button></div></article>)}</div></section>
 
       <form id="post-editor" className="studio-editor studio-post-editor" action={save} onChange={markDirty} key={`${post.id}-${editorVersion}`}>
-        <div className="studio-section-title"><div><small>{post.id ? 'Editing article' : 'New article'}</small><h2>{post.id ? post.title : 'Compose an article'}</h2></div>{post.id ? <button type="button" onClick={resetEditor}>Clear</button> : <ImagePlus />}</div>
+        <div className="studio-section-title"><div><small>{post.id ? 'Editing article' : 'New article'}</small><h2>{post.id ? post.title : 'Compose an article'}</h2></div>{post.id ? <button type="button" onClick={() => resetEditor()}>Clear</button> : <ImagePlus />}</div>
         <div className="studio-form-grid studio-post-meta">
           <label className="full">Article title<input name="title" required defaultValue={post.title} /></label>
           <label>URL slug<input name="slug" required defaultValue={post.slug} pattern="[a-z0-9-]+" /></label>
