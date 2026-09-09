@@ -6,7 +6,7 @@ function contentSecurityPolicy(nonce: string) { return [
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com`,
+  `script-src 'self' 'nonce-${nonce}'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://challenges.cloudflare.com`,
   "script-src-attr 'none'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
@@ -18,6 +18,9 @@ function contentSecurityPolicy(nonce: string) { return [
 ]; }
 
 export function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname === '/favicon.ico') {
+    return NextResponse.redirect(new URL('/favicon.svg', request.url), 308);
+  }
   const nonce = btoa(crypto.randomUUID());
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-csp-nonce', nonce);

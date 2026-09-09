@@ -6,6 +6,7 @@ const requiredFiles = [
   'proxy.ts', 'app/robots.ts', 'app/sitemap.ts', 'app/manifest.ts', 'app/not-found.tsx',
   'lib/request-security.ts', 'components/StructuredData.tsx',
   'scripts/export-cloudflare-data.mjs', 'scripts/import-vercel-data.mjs', 'postcss.config.mjs',
+  'vercel.json',
 ];
 const failures = [];
 for (const file of requiredFiles) if (!existsSync(resolve(root, file))) failures.push(`Missing ${file}`);
@@ -51,6 +52,8 @@ if (!read('app/api/admin/upload/validate/route.ts').includes('matchesSignature')
 if (!read('lib/security-crypto.ts').includes('const iterations = 600_000')) failures.push('Password hashing work factor was not upgraded');
 const packageJson = JSON.parse(read('package.json'));
 if (packageJson.scripts?.build !== 'next build' || packageJson.scripts?.start !== 'next start') failures.push('Standard Next.js scripts are not configured');
+const vercelConfig = JSON.parse(read('vercel.json'));
+if (vercelConfig.buildCommand !== 'npm run vercel-build') failures.push('Vercel is not configured to run the migration-aware build');
 for (const dependency of ['vinext', 'vite', 'wrangler', '@cloudflare/vite-plugin', '@cloudflare/workers-types']) {
   if (packageJson.dependencies?.[dependency] || packageJson.devDependencies?.[dependency]) failures.push(`Cloudflare/Vinext dependency remains: ${dependency}`);
 }

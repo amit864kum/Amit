@@ -5,6 +5,10 @@ import * as schema from './schema';
 
 let client: NeonQueryFunction<false, false> | null = null;
 
+export function databaseConfigured() {
+  return Boolean(process.env.DATABASE_URL?.trim());
+}
+
 function connection() {
   if (client) return client;
   const url = process.env.DATABASE_URL?.trim();

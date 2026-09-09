@@ -1,6 +1,6 @@
 import type { ProjectDestination } from './project-details';
 import { decodePathSegment, toProjectSlug } from '@/lib/slug';
-import { database } from '@/db';
+import { database, databaseConfigured } from '@/db';
 
 export type Project = {
   id: number; slug: string; title: string; category: string; summary: string;
@@ -33,8 +33,52 @@ const seedPosts = [
   ['research-to-reliable-product', 'From research prototype to reliable product', 'A practical framework for turning experimental systems into software people can use.', '## Protect the original insight\nResearch rewards novelty; products demand reliability. The first step is identifying the idea that must survive the transition.\n\n## Reduce operational uncertainty\nA useful product needs observable states, predictable failure handling, and interfaces that explain what the system is doing.\n\n## Build the feedback loop\nReliable software improves through measurement. Instrument the workflow, learn from real users, and refine without losing the research advantage.', 'Engineering Practice', '2026-07-28', 0],
 ];
 
+function developmentProjects(): Project[] {
+  return seedProjects.map((item, index) => ({
+    id: index + 1,
+    slug: String(item[0]),
+    title: String(item[1]),
+    category: String(item[2]),
+    summary: String(item[3]),
+    body: String(item[4]),
+    contentJson: null,
+    tech: String(item[5]),
+    year: String(item[6]),
+    imageUrl: null,
+    projectUrl: String(item[7]),
+    githubUrl: null,
+    featured: Number(item[8]),
+    destination: 'case_study',
+    published: 1,
+    showOnProjects: 1,
+    detailJson: null,
+    displayOrder: index,
+  }));
+}
+
+function developmentPosts(): Post[] {
+  return seedPosts.map((item, index) => ({
+    id: index + 1,
+    slug: String(item[0]),
+    title: String(item[1]),
+    excerpt: String(item[2]),
+    body: String(item[3]),
+    contentJson: null,
+    category: String(item[4]),
+    imageUrl: null,
+    featured: Number(item[6]),
+    publishedAt: String(item[5]),
+    published: 1,
+  }));
+}
+
+function shouldUseDevelopmentContent() {
+  return process.env.NODE_ENV !== 'production' && !databaseConfigured();
+}
+
 let initialization: Promise<void> | null = null;
 export function ensureContentTables() {
+  if (shouldUseDevelopmentContent()) return Promise.resolve();
   if (!initialization) initialization = initializeContentTables().catch((error) => {
     initialization = null;
     throw error;
@@ -66,6 +110,10 @@ async function initializeContentTables() {
 const projectSelect = 'SELECT id,slug,title,category,summary,body,content_json AS "contentJson",tech,year,image_url AS "imageUrl",project_url AS "projectUrl",github_url AS "githubUrl",featured,destination,published,show_on_projects AS "showOnProjects",detail_json AS "detailJson",display_order AS "displayOrder" FROM projects';
 
 export async function getProjects(featuredOnly = false): Promise<Project[]> {
+  if (shouldUseDevelopmentContent()) {
+    const projects = developmentProjects();
+    return featuredOnly ? projects.filter((project) => project.featured) : projects;
+  }
   await ensureContentTables();
   const query = featuredOnly
     ? `${projectSelect} WHERE published=1 AND featured=1 ORDER BY display_order,id`
@@ -73,10 +121,17 @@ export async function getProjects(featuredOnly = false): Promise<Project[]> {
   return (await database.prepare(query).all<Project>()).results;
 }
 export async function getAdminProjects(): Promise<Project[]> {
+  if (shouldUseDevelopmentContent()) return developmentProjects();
   await ensureContentTables();
   return (await database.prepare(`${projectSelect} ORDER BY display_order,id`).all<Project>()).results;
 }
 export async function getProject(slug: string, adminPreview = false): Promise<Project | null> {
+  if (shouldUseDevelopmentContent()) {
+    const requestedCanonical = toProjectSlug(decodePathSegment(slug));
+    return developmentProjects().find((project) =>
+      toProjectSlug(project.slug) === requestedCanonical || toProjectSlug(project.title) === requestedCanonical,
+    ) || null;
+  }
   await ensureContentTables();
   const decodedSlug = decodePathSegment(slug);
   const visibility = adminPreview ? '' : " AND published=1 AND destination='case_study'";
@@ -94,11 +149,18 @@ export async function getProject(slug: string, adminPreview = false): Promise<Pr
   ) || null;
 }
 export async function getProjectCount(): Promise<number> {
+  if (shouldUseDevelopmentContent()) return developmentProjects().length;
   await ensureContentTables();
   const row = await database.prepare('SELECT COUNT(*)::int AS count FROM projects WHERE published=1').first<{ count: number }>();
   return Number(row?.count || 0);
 }
 export async function getResumeSettings(): Promise<ResumeSettings> {
+  if (shouldUseDevelopmentContent()) return {
+    resumeUrl: '/resume-amit-kumar.pdf',
+    fileName: 'resume-amit-kumar.pdf',
+    buttonLabel: 'Download résumé',
+    updatedAt: '',
+  };
   await ensureContentTables();
   const row = await database.prepare(`SELECT resume_url AS "resumeUrl",file_name AS "fileName",
     button_label AS "buttonLabel",updated_at AS "updatedAt" FROM resume_settings WHERE id=1`).first<ResumeSettings>();
@@ -110,11 +172,13 @@ export async function getResumeSettings(): Promise<ResumeSettings> {
   };
 }
 export async function getPosts(includeDrafts = false): Promise<Post[]> {
+  if (shouldUseDevelopmentContent()) return developmentPosts().filter((post) => includeDrafts || post.published);
   await ensureContentTables();
   const where = includeDrafts ? '' : 'WHERE published = 1';
   return (await database.prepare('SELECT id,slug,title,excerpt,body,content_json AS "contentJson",category,image_url AS "imageUrl",featured,published_at AS "publishedAt",published FROM posts ' + where + ' ORDER BY featured DESC,published_at DESC,id DESC').all<Post>()).results;
 }
 export async function getPost(slug: string): Promise<Post | null> {
+  if (shouldUseDevelopmentContent()) return developmentPosts().find((post) => post.slug === decodePathSegment(slug)) || null;
   await ensureContentTables();
   return database.prepare('SELECT id,slug,title,excerpt,body,content_json AS "contentJson",category,image_url AS "imageUrl",featured,published_at AS "publishedAt",published FROM posts WHERE slug = ? AND published = 1').bind(slug).first<Post>();
 }

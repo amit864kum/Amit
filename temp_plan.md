@@ -183,7 +183,7 @@ Exit condition: migration produces no SEO regression or broken indexed URL.
 ## Phase 8 — Vercel configuration
 
 - [x] Remove `.openai/hosting.json` after eliminating Cloudflare runtime dependencies.
-- [x] Avoid `vercel.json`; Next.js Proxy owns the required headers and no platform override is needed.
+- [x] Add `vercel.json` to enforce the migration-aware build command independently of dashboard overrides.
 - [x] Add `.vercelignore` to exclude local backups, Cloudflare state, generated output, and migration exports.
 - [x] Configure production security headers for the Vercel runtime.
 - [!] Select a Neon region and align the Vercel function region during resource setup.
