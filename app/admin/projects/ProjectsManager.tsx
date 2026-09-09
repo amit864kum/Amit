@@ -2,8 +2,8 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowDown, ArrowUp, Edit3, ExternalLink, Heading2, ImagePlus, Pilcrow, Plus, Star, Trash2, UploadCloud } from 'lucide-react';
-import { useState, type ChangeEvent } from 'react';
+import { ArrowDown, ArrowUp, Edit3, ExternalLink, Heading2, ImagePlus, Pilcrow, Plus, Search, Star, Trash2, UploadCloud } from 'lucide-react';
+import { useMemo, useState, type ChangeEvent } from 'react';
 import type { Project } from '@/lib/content';
 import { articleBlocks, type ArticleBlock } from '@/lib/blog';
 import { toProjectSlug } from '@/lib/slug';
@@ -49,9 +49,16 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
   const [orderedProjects, setOrderedProjects] = useState(projects);
   const [orderStatus, setOrderStatus] = useState('Use the arrows to set the public display order.');
   const [orderPending, setOrderPending] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState('');
   const featured = orderedProjects.filter((item) => item.featured).length;
   const categories = new Set(orderedProjects.map((item) => item.category)).size;
   const detailSettings = projectDetails(project.detailJson);
+  const visibleProjects = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return orderedProjects;
+    return orderedProjects.filter((item) => `${item.title} ${item.category} ${item.tech} ${item.year}`.toLowerCase().includes(term));
+  }, [orderedProjects, query]);
 
   useUnsavedChanges(dirty);
   function markDirty() { setDirty(true); setStatus(''); }
@@ -133,6 +140,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
       setStatus('Add at least one section heading, or remove the optional content blocks.');
       return;
     }
+    setSaving(true);
     setStatus('Saving project…');
     try {
       const imageUrl = formData.get('removeImage') ? null : await uploadAdminFile(formData.get('image') as File, project.imageUrl);
@@ -160,7 +168,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
       router.refresh();
     } catch {
       setStatus('Could not save this project.');
-    }
+    } finally { setSaving(false); }
   }
 
   async function remove(id: number) {
@@ -194,8 +202,9 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
     <section className="studio-mini-stats" aria-label="Project statistics"><article><span>Total projects</span><strong>{orderedProjects.length}</strong></article><article><span>Homepage features</span><strong>{featured}</strong></article><article><span>Disciplines covered</span><strong>{categories}</strong></article><article><span>Portfolio coverage</span><strong>{orderedProjects.length ? Math.round(featured / orderedProjects.length * 100) : 0}%</strong></article></section>
     <div className="studio-manager-grid studio-project-manager">
       <section className="studio-records" aria-label="Projects"><div className="studio-section-title"><div><small>Portfolio inventory</small><h2>Published work</h2></div><span>{orderedProjects.length} records</span></div>
+        <div className="studio-library-tools"><label><Search aria-hidden="true" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search projects" aria-label="Search projects" /></label><span>{visibleProjects.length} shown</span></div>
         <div className="studio-order-help"><div><strong>Public display order</strong><p>Position 01 appears first in the project collection.</p></div><span aria-live="polite">{orderStatus}</span></div>
-        <div className="studio-record-list">{orderedProjects.map((item, index) => { const href = destinationHref(item); return <article key={item.id}><span className="studio-record-index">{String(index + 1).padStart(2, '0')}</span><div className="studio-record-copy"><div><small>{item.category} · {item.year} · {item.published ? item.destination.replace('_', ' ') : 'draft'}</small>{item.featured ? <b><Star /> Featured</b> : null}</div><h3>{item.title}</h3><p>{item.summary}</p><div className="studio-tech-preview">{item.tech.split(',').slice(0, 3).map((tech) => <span key={tech}>{tech.trim()}</span>)}</div></div><div className="studio-order-controls" aria-label={`Change display position for ${item.title}`}><button type="button" onClick={() => move(index, -1)} disabled={index === 0 || orderPending} aria-label={`Move ${item.title} up`} title="Move up"><ArrowUp /></button><button type="button" onClick={() => move(index, 1)} disabled={index === orderedProjects.length - 1 || orderPending} aria-label={`Move ${item.title} down`} title="Move down"><ArrowDown /></button></div><div className="studio-record-actions">{href ? <a href={href} target="_blank" rel="noreferrer" aria-label={`View ${item.title}`}><ExternalLink /></a> : null}<button type="button" onClick={() => editProject(item)} aria-label={`Edit ${item.title}`}><Edit3 /></button><button type="button" className="danger" onClick={() => remove(item.id)} aria-label={`Delete ${item.title}`}><Trash2 /></button></div></article>; })}</div>
+        <div className="studio-record-list">{visibleProjects.length ? visibleProjects.map((item) => { const index = orderedProjects.findIndex((projectItem) => projectItem.id === item.id); const href = destinationHref(item); return <article key={item.id} className={project.id === item.id ? 'is-selected' : ''}><span className="studio-record-index">{String(index + 1).padStart(2, '0')}</span><div className="studio-record-copy"><div><small>{item.category} · {item.year} · {item.published ? item.destination.replace('_', ' ') : 'draft'}</small>{item.featured ? <b><Star /> Featured</b> : null}</div><h3>{item.title}</h3><p>{item.summary}</p><div className="studio-tech-preview">{item.tech.split(',').slice(0, 3).map((tech) => <span key={tech}>{tech.trim()}</span>)}</div></div><div className="studio-order-controls" aria-label={`Change display position for ${item.title}`}><button type="button" onClick={() => move(index, -1)} disabled={index === 0 || orderPending || Boolean(query)} aria-label={`Move ${item.title} up`} title={query ? 'Clear search to reorder' : 'Move up'}><ArrowUp /></button><button type="button" onClick={() => move(index, 1)} disabled={index === orderedProjects.length - 1 || orderPending || Boolean(query)} aria-label={`Move ${item.title} down`} title={query ? 'Clear search to reorder' : 'Move down'}><ArrowDown /></button></div><div className="studio-record-actions">{href ? <a href={href} target="_blank" rel="noreferrer" aria-label={`View ${item.title}`}><ExternalLink /></a> : null}<button type="button" onClick={() => editProject(item)} aria-label={`Edit ${item.title}`}><Edit3 /></button><button type="button" className="danger" onClick={() => remove(item.id)} aria-label={`Delete ${item.title}`}><Trash2 /></button></div></article>; }) : <div className="studio-library-empty"><Search aria-hidden="true" /><strong>No matching projects</strong><p>Try a title, discipline, year, or technology.</p><button type="button" onClick={() => setQuery('')}>Clear search</button></div>}</div>
       </section>
 
       <form id="project-editor" className="studio-editor studio-post-editor" action={save} onChange={markDirty} key={`${project.id}-${editorVersion}`}>
@@ -258,7 +267,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
           <label className="studio-switch full"><input name="showOnProjects" type="checkbox" defaultChecked={Boolean(project.showOnProjects)} /><span /><div><strong>Show on Projects page</strong><small>Display this card in the public project collection.</small></div></label>
           <label className="studio-switch full"><input name="published" type="checkbox" defaultChecked={Boolean(project.published)} /><span /><div><strong>Published</strong><small>Draft projects remain available only inside the admin panel.</small></div></label>
         </div>
-        <div className="studio-editor-foot"><span aria-live="polite">{status || (dirty ? 'Unsaved changes' : 'All changes saved')}</span><button className="studio-save" type="submit" disabled={Boolean(uploadingBlock)}>{project.id ? 'Update project' : 'Publish project'}</button></div>
+        <div className="studio-editor-foot"><span className={status.startsWith('Could not') || status.startsWith('Every') || status.startsWith('Complete') || status.startsWith('Add at') ? 'is-error' : ''} role="status" aria-live="polite">{status || (dirty ? 'Unsaved changes' : 'All changes saved')}</span><button className="studio-save" type="submit" disabled={Boolean(uploadingBlock) || saving} aria-busy={saving}>{saving ? 'Saving…' : project.id ? 'Update project' : 'Publish project'}</button></div>
       </form>
     </div>
   </>;

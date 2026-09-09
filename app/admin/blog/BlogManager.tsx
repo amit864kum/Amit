@@ -2,8 +2,8 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowDown, ArrowUp, Edit3, ExternalLink, Heading2, ImagePlus, Pilcrow, Plus, Star, Trash2, UploadCloud } from 'lucide-react';
-import { useState, type ChangeEvent } from 'react';
+import { ArrowDown, ArrowUp, Edit3, ExternalLink, Heading2, ImagePlus, Pilcrow, Plus, Search, Star, Trash2, UploadCloud } from 'lucide-react';
+import { useMemo, useState, type ChangeEvent } from 'react';
 import type { Post } from '@/lib/content';
 import { articleBlocks, blocksToBody, type ArticleBlock } from '@/lib/blog';
 import { useUnsavedChanges } from '@/app/admin/_components/useUnsavedChanges';
@@ -27,8 +27,15 @@ export default function BlogManager({ posts }: { posts: Post[] }) {
   const [uploadingBlock, setUploadingBlock] = useState<string | null>(null);
   const [editorVersion, setEditorVersion] = useState(0);
   const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState('');
   const published = posts.filter((item) => item.published).length;
   const categories = new Set(posts.map((item) => item.category)).size;
+  const visiblePosts = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return posts;
+    return posts.filter((item) => `${item.title} ${item.category} ${item.excerpt} ${item.publishedAt}`.toLowerCase().includes(term));
+  }, [posts, query]);
 
   useUnsavedChanges(dirty);
   function markDirty() { setDirty(true); setStatus(''); }
@@ -106,6 +113,7 @@ export default function BlogManager({ posts }: { posts: Post[] }) {
       setStatus('Add at least one heading or paragraph before saving.');
       return;
     }
+    setSaving(true);
     setStatus('Saving article…');
     try {
       const imageUrl = formData.get('removeImage') ? null : await uploadAdminFile(formData.get('image') as File, post.imageUrl);
@@ -131,7 +139,7 @@ export default function BlogManager({ posts }: { posts: Post[] }) {
       router.refresh();
     } catch {
       setStatus('Could not save this article.');
-    }
+    } finally { setSaving(false); }
   }
 
   async function remove(id: number) {
@@ -144,7 +152,7 @@ export default function BlogManager({ posts }: { posts: Post[] }) {
   return <>
     <section className="studio-mini-stats"><article><span>Total articles</span><strong>{posts.length}</strong></article><article><span>Published</span><strong>{published}</strong></article><article><span>Drafts</span><strong>{posts.length - published}</strong></article><article><span>Topics covered</span><strong>{categories}</strong></article></section>
     <div className="studio-manager-grid studio-blog-manager">
-      <section className="studio-records"><div className="studio-section-title"><div><small>Editorial library</small><h2>Articles</h2></div><span>{published} live</span></div><div className="studio-record-list">{posts.map((item, index) => <article key={item.id}><span className="studio-record-index">{String(index + 1).padStart(2, '0')}</span><div className="studio-record-copy"><div><small>{item.publishedAt} · {item.published ? 'Published' : 'Draft'}</small>{item.featured ? <b><Star /> Featured</b> : null}</div><h3>{item.title}</h3><p>{item.excerpt}</p><div className="studio-tech-preview"><span>{item.category}</span></div></div><div className="studio-record-actions"><a href={`/blog/${item.slug}`} target="_blank" aria-label={`View ${item.title}`}><ExternalLink /></a><button type="button" onClick={() => editPost(item)} aria-label={`Edit ${item.title}`}><Edit3 /></button><button type="button" className="danger" onClick={() => remove(item.id)} aria-label={`Delete ${item.title}`}><Trash2 /></button></div></article>)}</div></section>
+      <section className="studio-records"><div className="studio-section-title"><div><small>Editorial library</small><h2>Articles</h2></div><span>{published} live</span></div><div className="studio-library-tools"><label><Search aria-hidden="true" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search articles" aria-label="Search articles" /></label><span>{visiblePosts.length} shown</span></div><div className="studio-record-list">{visiblePosts.length ? visiblePosts.map((item) => { const index = posts.findIndex((postItem) => postItem.id === item.id); return <article key={item.id} className={post.id === item.id ? 'is-selected' : ''}><span className="studio-record-index">{String(index + 1).padStart(2, '0')}</span><div className="studio-record-copy"><div><small>{item.publishedAt} · {item.published ? 'Published' : 'Draft'}</small>{item.featured ? <b><Star /> Featured</b> : null}</div><h3>{item.title}</h3><p>{item.excerpt}</p><div className="studio-tech-preview"><span>{item.category}</span></div></div><div className="studio-record-actions"><a href={`/blog/${item.slug}`} target="_blank" rel="noreferrer" aria-label={`View ${item.title}`}><ExternalLink /></a><button type="button" onClick={() => editPost(item)} aria-label={`Edit ${item.title}`}><Edit3 /></button><button type="button" className="danger" onClick={() => remove(item.id)} aria-label={`Delete ${item.title}`}><Trash2 /></button></div></article>; }) : <div className="studio-library-empty"><Search aria-hidden="true" /><strong>No matching articles</strong><p>Try a title, topic, excerpt, or publication date.</p><button type="button" onClick={() => setQuery('')}>Clear search</button></div>}</div></section>
 
       <form id="post-editor" className="studio-editor studio-post-editor" action={save} onChange={markDirty} key={`${post.id}-${editorVersion}`}>
         <div className="studio-section-title"><div><small>{post.id ? 'Editing article' : 'New article'}</small><h2>{post.id ? post.title : 'Compose an article'}</h2></div>{post.id ? <button type="button" onClick={() => resetEditor()}>Clear</button> : <ImagePlus />}</div>
@@ -188,7 +196,7 @@ export default function BlogManager({ posts }: { posts: Post[] }) {
           <label className="studio-switch full"><input name="featured" type="checkbox" defaultChecked={Boolean(post.featured)} /><span /><div><strong>Featured article</strong><small>Use this article as the blog lead.</small></div></label>
           <label className="studio-switch full"><input name="published" type="checkbox" defaultChecked={Boolean(post.published)} /><span /><div><strong>Published</strong><small>Turn off to keep this article as a private draft.</small></div></label>
         </div>
-        <div className="studio-editor-foot"><span aria-live="polite">{status || (dirty ? 'Unsaved changes' : 'All changes saved')}</span><button className="studio-save" type="submit" disabled={Boolean(uploadingBlock)}>{post.id ? 'Update article' : 'Publish article'}</button></div>
+        <div className="studio-editor-foot"><span className={status.startsWith('Could not') || status.startsWith('Every') || status.startsWith('Add at') ? 'is-error' : ''} role="status" aria-live="polite">{status || (dirty ? 'Unsaved changes' : 'All changes saved')}</span><button className="studio-save" type="submit" disabled={Boolean(uploadingBlock) || saving} aria-busy={saving}>{saving ? 'Saving…' : post.id ? 'Update article' : 'Publish article'}</button></div>
       </form>
     </div>
   </>;

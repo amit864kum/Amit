@@ -13,7 +13,7 @@ export default async function AdminPage() {
     { label: 'Blog library', value: counts.posts, detail: `${counts.publishedPosts} published · ${counts.drafts} drafts`, href: '/admin/blog', icon: BookOpenText, tone: 'blue' },
     { label: 'New enquiries', value: counts.newEnquiries, detail: `${counts.enquiries} total conversations`, href: '/admin/enquiries', icon: Inbox, tone: 'gold' },
   ];
-  return <AdminShell counts={counts} eyebrow="Command centre" title="Good morning, Amit." description="A clear view of your portfolio content and new opportunities.">
+  return <AdminShell counts={counts} eyebrow="Command centre" title="Welcome back, Amit." description="A clear view of your portfolio content and new opportunities.">
     <section className="studio-kpi-grid" aria-label="Portfolio overview">
       {cards.map(({ icon: Icon, ...card }) => <Link href={card.href} key={card.label} className={`studio-kpi tone-${card.tone}`}>
         <span><Icon aria-hidden="true" /></span><small>{card.label}</small><strong>{String(card.value).padStart(2, '0')}</strong><p>{card.detail}</p><ArrowUpRight aria-hidden="true" className="studio-card-arrow" />

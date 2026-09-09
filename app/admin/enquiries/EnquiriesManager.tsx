@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Archive, CheckCircle2, Mail, Search } from 'lucide-react';
+import { Archive, CheckCircle2, Mail, Search, X } from 'lucide-react';
 
 export type Enquiry = { id: number; name: string; email: string; contactDetails: string; createdAt: string; status: string };
 
@@ -43,9 +43,9 @@ export default function EnquiriesManager({ enquiries }: { enquiries: Enquiry[] }
     <section className="studio-inbox">
       <header>
         <div className="studio-inbox-filters">{(['all', 'new', 'replied', 'archived'] as const).map((item) => <button type="button" key={item} className={filter === item ? 'active' : ''} onClick={() => setFilter(item)} aria-pressed={filter === item}>{item}<span>{item === 'all' ? enquiries.length : count(item)}</span></button>)}</div>
-        <label><Search aria-hidden="true" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, email, or contact details" aria-label="Search enquiries" /></label>
+        <label><Search aria-hidden="true" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, email, or contact details" aria-label="Search enquiries" />{search ? <button type="button" onClick={() => setSearch('')} aria-label="Clear enquiry search"><X aria-hidden="true" /></button> : null}</label>
       </header>
-      <p className="studio-inbox-feedback" role="status" aria-live="polite">{feedback}</p>
+      <div className="studio-inbox-summary"><span>{visible.length} {visible.length === 1 ? 'conversation' : 'conversations'} shown</span><p className={feedback.startsWith('The enquiry') ? 'is-error' : ''} role="status" aria-live="polite">{feedback}</p></div>
       <div className="studio-message-grid">
         {visible.length ? visible.map((item) => <article key={item.id} className={item.status === 'new' ? 'is-new' : ''} aria-busy={pendingId === item.id}>
           <header>
