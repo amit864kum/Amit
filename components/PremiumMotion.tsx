@@ -1,11 +1,9 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import { usePathname } from 'next/navigation';
-import { AnimatePresence, motion, useMotionValue, useReducedMotion, useScroll, useSpring } from 'framer-motion';
+import { motion, useMotionValue, useReducedMotion, useScroll, useSpring } from 'framer-motion';
 
 export default function PremiumMotion({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 130, damping: 28, mass: .2 });
@@ -26,18 +24,7 @@ export default function PremiumMotion({ children }: { children: ReactNode }) {
       <motion.div className="global-progress" style={{ scaleX: progress }} />
       {!reduceMotion ? <motion.div className="cursor-aurora" style={{ x: glowX, y: glowY }} aria-hidden="true" /> : null}
       <div className="ambient-grid" aria-hidden="true" />
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          id="main-content"
-          tabIndex={-1}
-          className="route-stage"
-          key={pathname}
-          initial={false}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          exit={reduceMotion ? undefined : { opacity: 0, y: -10, filter: 'blur(5px)' }}
-          transition={{ duration: .55, ease: [0.22, 1, 0.36, 1] }}
-        >{children}</motion.div>
-      </AnimatePresence>
+      <div id="main-content" tabIndex={-1} className="route-stage">{children}</div>
     </>
   );
 }
