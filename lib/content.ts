@@ -1,4 +1,5 @@
 import type { ProjectDestination } from './project-details';
+import { unstable_cache } from 'next/cache';
 import { decodePathSegment, toProjectSlug } from '@/lib/slug';
 import { database, databaseConfigured } from '@/db';
 
@@ -109,16 +110,37 @@ async function initializeContentTables() {
 
 const projectSelect = 'SELECT id,slug,title,category,summary,body,content_json AS "contentJson",tech,year,image_url AS "imageUrl",project_url AS "projectUrl",github_url AS "githubUrl",featured,destination,published,show_on_projects AS "showOnProjects",detail_json AS "detailJson",display_order AS "displayOrder" FROM projects';
 
-export async function getProjects(featuredOnly = false): Promise<Project[]> {
-  if (shouldUseDevelopmentContent()) {
-    const projects = developmentProjects();
-    return featuredOnly ? projects.filter((project) => project.featured) : projects;
-  }
+async function readProjects(featuredOnly: boolean) {
   await ensureContentTables();
   const query = featuredOnly
     ? `${projectSelect} WHERE published=1 AND featured=1 ORDER BY display_order,id`
     : `${projectSelect} WHERE published=1 AND show_on_projects=1 ORDER BY display_order,id`;
   return (await database.prepare(query).all<Project>()).results;
+}
+
+const cachedProjects = unstable_cache(() => readProjects(false), ['public-projects'], { revalidate: 300, tags: ['projects'] });
+const cachedFeaturedProjects = unstable_cache(() => readProjects(true), ['featured-projects'], { revalidate: 300, tags: ['projects'] });
+const cachedProjectCount = unstable_cache(async () => {
+  await ensureContentTables();
+  const row = await database.prepare('SELECT COUNT(*)::int AS count FROM projects WHERE published=1').first<{ count: number }>();
+  return Number(row?.count || 0);
+}, ['public-project-count'], { revalidate: 300, tags: ['projects'] });
+const cachedResumeSettings = unstable_cache(async () => {
+  await ensureContentTables();
+  return database.prepare(`SELECT resume_url AS "resumeUrl",file_name AS "fileName",
+    button_label AS "buttonLabel",updated_at AS "updatedAt" FROM resume_settings WHERE id=1`).first<ResumeSettings>();
+}, ['public-resume-settings'], { revalidate: 300, tags: ['resume'] });
+const cachedPosts = unstable_cache(async () => {
+  await ensureContentTables();
+  return (await database.prepare('SELECT id,slug,title,excerpt,body,content_json AS "contentJson",category,image_url AS "imageUrl",featured,published_at AS "publishedAt",published FROM posts WHERE published = 1 ORDER BY featured DESC,published_at DESC,id DESC').all<Post>()).results;
+}, ['public-posts'], { revalidate: 300, tags: ['posts'] });
+
+export async function getProjects(featuredOnly = false): Promise<Project[]> {
+  if (shouldUseDevelopmentContent()) {
+    const projects = developmentProjects();
+    return featuredOnly ? projects.filter((project) => project.featured) : projects;
+  }
+  return featuredOnly ? cachedFeaturedProjects() : cachedProjects();
 }
 export async function getAdminProjects(): Promise<Project[]> {
   if (shouldUseDevelopmentContent()) return developmentProjects();
@@ -150,9 +172,7 @@ export async function getProject(slug: string, adminPreview = false): Promise<Pr
 }
 export async function getProjectCount(): Promise<number> {
   if (shouldUseDevelopmentContent()) return developmentProjects().length;
-  await ensureContentTables();
-  const row = await database.prepare('SELECT COUNT(*)::int AS count FROM projects WHERE published=1').first<{ count: number }>();
-  return Number(row?.count || 0);
+  return cachedProjectCount();
 }
 export async function getResumeSettings(): Promise<ResumeSettings> {
   if (shouldUseDevelopmentContent()) return {
@@ -161,9 +181,7 @@ export async function getResumeSettings(): Promise<ResumeSettings> {
     buttonLabel: 'Download résumé',
     updatedAt: '',
   };
-  await ensureContentTables();
-  const row = await database.prepare(`SELECT resume_url AS "resumeUrl",file_name AS "fileName",
-    button_label AS "buttonLabel",updated_at AS "updatedAt" FROM resume_settings WHERE id=1`).first<ResumeSettings>();
+  const row = await cachedResumeSettings();
   return row || {
     resumeUrl: '/resume-amit-kumar.pdf',
     fileName: 'resume-amit-kumar.pdf',
@@ -173,9 +191,9 @@ export async function getResumeSettings(): Promise<ResumeSettings> {
 }
 export async function getPosts(includeDrafts = false): Promise<Post[]> {
   if (shouldUseDevelopmentContent()) return developmentPosts().filter((post) => includeDrafts || post.published);
+  if (!includeDrafts) return cachedPosts();
   await ensureContentTables();
-  const where = includeDrafts ? '' : 'WHERE published = 1';
-  return (await database.prepare('SELECT id,slug,title,excerpt,body,content_json AS "contentJson",category,image_url AS "imageUrl",featured,published_at AS "publishedAt",published FROM posts ' + where + ' ORDER BY featured DESC,published_at DESC,id DESC').all<Post>()).results;
+  return (await database.prepare('SELECT id,slug,title,excerpt,body,content_json AS "contentJson",category,image_url AS "imageUrl",featured,published_at AS "publishedAt",published FROM posts ORDER BY featured DESC,published_at DESC,id DESC').all<Post>()).results;
 }
 export async function getPost(slug: string): Promise<Post | null> {
   if (shouldUseDevelopmentContent()) return developmentPosts().find((post) => post.slug === decodePathSegment(slug)) || null;

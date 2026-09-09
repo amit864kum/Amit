@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { database } from '@/db';
 import { requireAdminApi } from '@/lib/admin';
 import { ensureContentTables } from '@/lib/content';
@@ -37,5 +37,6 @@ export async function PUT(request: Request) {
     button_label=excluded.button_label,updated_at=CURRENT_TIMESTAMP`).bind(resumeUrl, fileName, buttonLabel).run();
   if (existing?.resumeUrl !== resumeUrl) await deleteManagedBlobsIfUnreferenced(managedBlobUrls(existing?.resumeUrl));
   revalidatePath('/about', 'page');
+  revalidateTag('resume', 'max');
   return NextResponse.json({ ok: true }, { headers: noStoreHeaders() });
 }

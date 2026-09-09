@@ -21,7 +21,10 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image', title: siteConfig.title, description: siteConfig.description, images: ['/og-social.jpg'] },
 };
 
-export const dynamic = 'force-dynamic';
+// Cache the public page at Vercel's edge and refresh it periodically. Admin
+// mutations also call revalidatePath(), so newly published work still appears
+// immediately without making every visitor wait for Neon.
+export const revalidate = 300;
 const services = [
   { title: 'Full-Stack Product Development', description: 'I turn product ideas into scalable web applications—from interface architecture to production-ready APIs.', skills: ['Product UI', 'Backend APIs', 'Databases'], icon: Box },
   { title: 'Blockchain Systems', description: 'I build permissioned networks, smart-contract workflows, and traceable platforms for real operational challenges.', skills: ['Hyperledger Fabric', 'Go chaincode', 'IPFS'], icon: Network },

@@ -24,7 +24,7 @@ const experience = [
   { year: '2024', company: 'IIT Patna — Mechanical Engineering', role: 'Web Development Intern', summary: 'Translated institutional requirements into a clear, responsive digital experience for an academic department.', focus: ['Frontend', 'Information Design', 'Accessibility'] },
 ];
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 export default async function AboutPage() {
   const [projectCount, resume] = await Promise.all([getProjectCount(), getResumeSettings()]);

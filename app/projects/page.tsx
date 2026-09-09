@@ -24,7 +24,7 @@ import SiteFooter from '@/components/SiteFooter';
 import ProjectExplorer from './ProjectExplorer';
 import { getProjects } from '@/lib/content';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 export const metadata: Metadata = {
   title: 'Projects — Amit Kumar Portfolio',
   description: 'Case studies from Amit Kumar across full-stack web development, blockchain engineering, applied AI, cloud systems, and research products in Patna.',

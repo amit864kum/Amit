@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { database } from '@/db';
 import { requireAdminApi } from '@/lib/admin';
 import { ensureContentTables } from '@/lib/content';
@@ -66,6 +66,7 @@ export async function POST(request: Request) {
     throw error;
   }
   revalidatePath('/', 'layout');
+  revalidateTag('projects', 'max');
   return NextResponse.json({ ok: true });
 }
 export async function PATCH(request: Request) {
@@ -94,6 +95,7 @@ export async function PATCH(request: Request) {
   const removed = [...managedBlobUrls(existingRecord.imageUrl, existingRecord.contentJson, existingRecord.detailJson)].filter((url) => !retained.has(url));
   await deleteManagedBlobsIfUnreferenced(removed);
   revalidatePath('/', 'layout');
+  revalidateTag('projects', 'max');
   return NextResponse.json({ ok: true });
 }
 export async function DELETE(request: Request) {
@@ -103,6 +105,7 @@ export async function DELETE(request: Request) {
   await database.prepare('DELETE FROM projects WHERE id=?').bind(id).run();
   if (existing) await deleteManagedBlobsIfUnreferenced(managedBlobUrls(existing.imageUrl, existing.contentJson, existing.detailJson));
   revalidatePath('/', 'layout');
+  revalidateTag('projects', 'max');
   return NextResponse.json({ ok: true });
 }
 
@@ -119,5 +122,6 @@ export async function PUT(request: Request) {
   }
   await database.batch(ids.map((id, index) => database.prepare('UPDATE projects SET display_order=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(index, id)));
   revalidatePath('/', 'layout');
+  revalidateTag('projects', 'max');
   return NextResponse.json({ ok: true });
 }

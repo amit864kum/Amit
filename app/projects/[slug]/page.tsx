@@ -15,7 +15,7 @@ import { decodePathSegment, toProjectSlug } from '@/lib/slug';
 import StructuredData from '@/components/StructuredData';
 import { absoluteUrl, siteConfig } from '@/lib/site-config';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

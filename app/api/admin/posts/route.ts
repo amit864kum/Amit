@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireAdminApi } from '@/lib/admin';
 import { database } from '@/db';
 import { ensureContentTables } from '@/lib/content';
@@ -23,6 +23,7 @@ export async function POST(request: Request) {
   const p = await request.json() as PostPayload;
   await database.prepare('INSERT INTO posts (slug,title,excerpt,body,content_json,category,image_url,featured,published_at,published) VALUES (?,?,?,?,?,?,?,?,?,?)').bind(p.slug,p.title,p.excerpt,p.body,p.contentJson||null,p.category,p.imageUrl||null,p.featured?1:0,p.publishedAt,p.published?1:0).run();
   revalidatePath('/blog', 'layout');
+  revalidateTag('posts', 'max');
   return NextResponse.json({ ok: true }, { headers: noStoreHeaders() });
 }
 export async function PATCH(request: Request) {
@@ -35,6 +36,7 @@ export async function PATCH(request: Request) {
   const removed = [...managedBlobUrls(existing.imageUrl, existing.contentJson)].filter((url) => !retained.has(url));
   await deleteManagedBlobsIfUnreferenced(removed);
   revalidatePath('/blog', 'layout');
+  revalidateTag('posts', 'max');
   return NextResponse.json({ ok: true }, { headers: noStoreHeaders() });
 }
 export async function DELETE(request: Request) {
@@ -44,5 +46,6 @@ export async function DELETE(request: Request) {
   await database.prepare('DELETE FROM posts WHERE id=?').bind(id).run();
   if (existing) await deleteManagedBlobsIfUnreferenced(managedBlobUrls(existing.imageUrl, existing.contentJson));
   revalidatePath('/blog', 'layout');
+  revalidateTag('posts', 'max');
   return NextResponse.json({ ok: true }, { headers: noStoreHeaders() });
 }

@@ -3,7 +3,7 @@ import SiteFooter from '@/components/SiteFooter';
 import BlogExplorer from '@/components/BlogExplorer';
 import { getPosts } from '@/lib/content';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 export const metadata: Metadata = {
   title: 'Blog — Engineering, Blockchain & Product Notes',
   description: 'Articles by Amit Kumar on full-stack engineering, blockchain products, distributed systems, research, and building dependable web experiences.',
