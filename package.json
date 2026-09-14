@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "vercel-build": "npm run check:env && npm run db:migrate && next build",
+    "vercel-build": "npm run check:env && npm run db:migrate && npm run check:contact-schema && next build",
     "start": "next start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "typecheck": "tsc --noEmit",
@@ -19,6 +19,7 @@
     "migrate:import": "node scripts/import-vercel-data.mjs",
     "check:production": "node scripts/production-check.mjs",
     "check:env": "node scripts/env-check.mjs",
+    "check:contact-schema": "node scripts/check-contact-schema.mjs",
     "check:links": "node scripts/link-check.mjs",
     "generate:admin": "node scripts/generate-admin-credentials.mjs",
     "verify": "npm audit && npm run lint && npm run typecheck && npm run build && npm run check:production"

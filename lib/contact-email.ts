@@ -26,7 +26,7 @@ export async function sendContactNotification(enquiry: Enquiry) {
         to: [to],
         reply_to: enquiry.email,
         subject: `New portfolio enquiry from ${enquiry.name}`,
-        html: `<div style="font-family:Arial,sans-serif;max-width:640px;margin:auto;padding:32px"><p style="color:#6b7280">AMIT KUMAR PORTFOLIO</p><h1>New enquiry</h1><p><strong>Name:</strong> ${escapeHtml(enquiry.name)}</p><p><strong>Email:</strong> ${escapeHtml(enquiry.email)}</p><hr><p><strong>Contact details</strong></p><p style="white-space:pre-wrap">${escapeHtml(enquiry.contactDetails)}</p></div>`,
+        html: `<div style="font-family:Arial,sans-serif;max-width:640px;margin:auto;padding:32px"><p style="color:#6b7280">AMIT KUMAR PORTFOLIO</p><h1>New enquiry</h1><p><strong>Name:</strong> ${escapeHtml(enquiry.name)}</p><p><strong>Email:</strong> ${escapeHtml(enquiry.email)}</p><hr><p><strong>Contact Number</strong></p><p>${escapeHtml(enquiry.contactDetails)}</p></div>`,
       }),
       signal: AbortSignal.timeout(7000),
     });

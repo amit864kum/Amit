@@ -53,7 +53,7 @@ export default function EnquiriesManager({ enquiries }: { enquiries: Enquiry[] }
             <div><h2>{item.name}</h2><a href={`mailto:${item.email}`}>{item.email}</a></div>
             <span className={`status-${item.status}`}>{item.status}</span>
           </header>
-          <div className="studio-message-meta"><span>Contact details</span><time>{new Date(item.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</time></div>
+        <div className="studio-message-meta"><span>Contact Number</span><time>{new Date(item.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</time></div>
           <p>{item.contactDetails}</p>
           <footer>
             <a href={`mailto:${item.email}?subject=${encodeURIComponent('Re: Your portfolio enquiry')}`}><Mail aria-hidden="true" /> Reply by email</a>

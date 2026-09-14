@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpRight, AtSign, CheckCircle2, MessageSquareText, RotateCcw, Sparkles, UserRound } from 'lucide-react';
+import { ArrowUpRight, AtSign, CheckCircle2, Phone, RotateCcw, Sparkles, UserRound } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 declare global {
@@ -9,8 +9,8 @@ declare global {
   }
 }
 
-type Draft = { name: string; email: string; contactDetails: string };
-const emptyDraft: Draft = { name: '', email: '', contactDetails: '' };
+type Draft = { name: string; email: string; contactNumber: string };
+const emptyDraft: Draft = { name: '', email: '', contactNumber: '' };
 
 export default function ContactForm() {
   const startedAtInputRef = useRef<HTMLInputElement>(null);
@@ -35,7 +35,7 @@ export default function ContactForm() {
           setDraft({
             name: typeof parsed.name === 'string' ? parsed.name : '',
             email: typeof parsed.email === 'string' ? parsed.email : '',
-            contactDetails: typeof parsed.contactDetails === 'string' ? parsed.contactDetails : '',
+            contactNumber: typeof parsed.contactNumber === 'string' ? parsed.contactNumber : '',
           });
         }
       } catch {
@@ -106,7 +106,7 @@ export default function ContactForm() {
   if (state === 'sent') return <div className="contact-wizard-success contact-simple-success" role="status">
     <span><CheckCircle2 aria-hidden="true" /> Enquiry received</span>
     <h3>Thank you for<br /><em>getting in touch.</em></h3>
-    <p>Your contact details have been received. A personal reply will be sent to your email, usually within two working days.</p>
+    <p>Your enquiry has been received. A personal reply will be sent to your email, usually within two working days.</p>
     <button type="button" onClick={() => { sessionStorage.removeItem('contact-enquiry-draft'); setDraft(emptyDraft); setState('idle'); }}><RotateCcw aria-hidden="true" /> Send another enquiry</button>
   </div>;
 
@@ -119,7 +119,7 @@ export default function ContactForm() {
 
     <fieldset className="contact-simple-fields">
       <legend>Send an enquiry.</legend>
-      <p>Share your name, email, and the best way to contact you.</p>
+      <p>Share your name, email, and contact number.</p>
       <div className="contact-field-grid">
         <label className="contact-input-card" htmlFor="contact-name">
           <span><UserRound aria-hidden="true" />Name</span>
@@ -130,10 +130,10 @@ export default function ContactForm() {
           <input id="contact-email" name="email" type="email" required maxLength={120} autoComplete="email" inputMode="email" placeholder="you@example.com" value={draft.email} onChange={(event) => setDraft({ ...draft, email: event.target.value })} />
         </label>
       </div>
-      <label className="contact-input-card contact-details-card" htmlFor="contact-details">
-        <span><MessageSquareText aria-hidden="true" />Contact details</span>
-        <textarea id="contact-details" name="contactDetails" required minLength={5} maxLength={1000} rows={5} aria-describedby="contact-details-help" value={draft.contactDetails} onChange={(event) => setDraft({ ...draft, contactDetails: event.target.value })} />
-        <small className="contact-field-meta" id="contact-details-help"><span>Include at least one reliable way to reach you.</span><b>{draft.contactDetails.length} / 1000</b></small>
+      <label className="contact-input-card contact-details-card" htmlFor="contact-number">
+        <span><Phone aria-hidden="true" />Contact Number</span>
+        <input id="contact-number" name="contactNumber" type="tel" inputMode="tel" autoComplete="tel" required minLength={7} maxLength={24} pattern="[+()0-9\s-]{7,24}" title="Enter a phone number with 7 to 15 digits" placeholder="+91 98765 43210" aria-describedby="contact-number-help" value={draft.contactNumber} onChange={(event) => setDraft({ ...draft, contactNumber: event.target.value.replace(/[^+()0-9\s-]/g, '') })} />
+        <small className="contact-field-meta" id="contact-number-help">Include your country code if you are outside India.</small>
       </label>
       {turnstileSiteKey ? <div className="contact-turnstile" ref={turnstileRef} aria-label="Bot verification" /> : null}
     </fieldset>
