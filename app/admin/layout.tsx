@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { cookies } from 'next/headers';
+import AdminThemeToggle from './_components/AdminThemeToggle';
 import './admin.css';
 
 export const metadata: Metadata = {
@@ -7,6 +9,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, noarchive: true, nocache: true },
 };
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
-  return children;
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const saved = (await cookies()).get('admin-theme')?.value;
+  const theme = saved === 'light' ? 'light' : 'dark';
+  return <div className="admin-theme" data-admin-theme={theme}>
+    <AdminThemeToggle initialTheme={theme} />
+    {children}
+  </div>;
 }

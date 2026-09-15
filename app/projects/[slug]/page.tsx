@@ -10,6 +10,7 @@ import ProjectCaseMediaMotion from '@/components/ProjectCaseMediaMotion';
 import ProjectImageViewer from '@/components/ProjectImageViewer';
 import { getProject, getProjects } from '@/lib/content';
 import { articleBlocks, blockSections } from '@/lib/blog';
+import RichTextContent from '@/components/RichTextContent';
 import { projectDetails } from '@/lib/project-details';
 import { decodePathSegment, toProjectSlug } from '@/lib/slug';
 import StructuredData from '@/components/StructuredData';
@@ -106,7 +107,7 @@ export default async function ProjectPage({ params }: Props) {
       <div className="project-walkthrough-sections">{contentSections.map((section, sectionIndex) => <article key={`${section.id}-${sectionIndex}`}>
         <header><span>{String(sectionIndex + 1).padStart(2, '0')}</span><h3>{section.heading}</h3></header>
         <div className="project-walkthrough-flow">{section.blocks.map((block) => {
-          if (block.type === 'paragraph') return <p key={block.id}>{block.text}</p>;
+          if (block.type === 'paragraph') return block.richText ? <RichTextContent key={block.id} document={block.richText} /> : <p key={block.id}>{block.text}</p>;
           if (block.type === 'image' && block.imageUrl) return <figure key={block.id}>{block.imageHeading ? <h4>{block.imageHeading}</h4> : null}<div className="project-walkthrough-image"><ProjectImageViewer src={block.imageUrl} alt={block.alt || `${project.title} project screenshot`} /></div>{block.imageDescription ? <figcaption>{block.imageDescription}</figcaption> : null}</figure>;
           return null;
         })}</div>

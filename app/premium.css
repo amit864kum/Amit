@@ -2906,3 +2906,14 @@ html[data-theme='light'] .article-inline-image>div{
   .contact-intake{padding-top:64px}
   .hsw-kicker,.hsw-card-copy li{font-size:12px}
 }
+
+/* Structured content authored in the admin rich-text editor. */
+.structured-rich-text{display:contents}
+.structured-rich-text>p:first-child{margin-top:0}
+.structured-rich-text ul,.structured-rich-text ol{margin:1em 0;padding-left:1.55em}
+.structured-rich-text li{margin:.38em 0;line-height:1.7}
+.structured-rich-text blockquote{margin:1.5em 0;padding:.2em 0 .2em 1.1em;border-left:3px solid var(--gold);color:var(--muted)}
+.structured-rich-text pre{overflow:auto;margin:1.5em 0;padding:18px;border:1px solid var(--line);border-radius:12px;background:#0d1220;color:#e9edff}
+.structured-rich-text code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.structured-rich-text :not(pre)>code{padding:.15em .38em;border-radius:5px;background:var(--raised)}
+.structured-rich-text a{color:var(--gold-strong);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}

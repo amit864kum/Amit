@@ -13,11 +13,48 @@ export function articleImage(value: string) {
   return { src, alt: match[1].trim() || 'Article image' };
 }
 
+export type RichTextNode = {
+  type: string;
+  attrs?: Record<string, unknown>;
+  marks?: Array<{ type: string; attrs?: Record<string, unknown> }>;
+  text?: string;
+  content?: RichTextNode[];
+};
+
+export type RichTextDocument = RichTextNode & { type: 'doc'; content?: RichTextNode[] };
+
+export function plainTextDocument(value: string): RichTextDocument {
+  return {
+    type: 'doc',
+    content: value.split(/\n{2,}/).filter(Boolean).map((text) => ({
+      type: 'paragraph',
+      content: [{ type: 'text', text }],
+    })),
+  };
+}
+
+export function richTextPlainText(value: RichTextDocument | null | undefined) {
+  const visit = (node: RichTextNode): string => {
+    if (node.type === 'text') return node.text || '';
+    const content = (node.content || []).map(visit).join(node.type === 'paragraph' || node.type === 'heading' || node.type === 'listItem' ? ' ' : '');
+    return content.trim();
+  };
+  return value ? visit(value).replace(/\s+/g, ' ').trim() : '';
+}
+
+function normalizeRichText(value: unknown): RichTextDocument | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const document = value as RichTextDocument;
+  if (document.type !== 'doc' || !Array.isArray(document.content)) return undefined;
+  return document;
+}
+
 export type ArticleBlock = {
   id: string;
   type: 'heading' | 'paragraph' | 'image';
   heading?: string;
   text?: string;
+  richText?: RichTextDocument;
   imageUrl?: string;
   imageHeading?: string;
   imageDescription?: string;
@@ -35,7 +72,10 @@ export function articleBlocks(contentJson: string | null | undefined, body: stri
           if (!['heading', 'paragraph', 'image'].includes(candidate.type || '')) return [];
           const id = typeof candidate.id === 'string' && candidate.id ? candidate.id : `block-${index + 1}`;
           if (candidate.type === 'heading') return [{ id, type: 'heading', heading: String(candidate.heading || '').slice(0, 160) }];
-          if (candidate.type === 'paragraph') return [{ id, type: 'paragraph', text: String(candidate.text || '').slice(0, 12000) }];
+          if (candidate.type === 'paragraph') {
+            const text = String(candidate.text || '').slice(0, 12000);
+            return [{ id, type: 'paragraph', text, richText: normalizeRichText(candidate.richText) }];
+          }
           const imageUrl = String(candidate.imageUrl || '');
           if (imageUrl && !imageUrl.startsWith('/api/media/')) return [];
           return [{
@@ -58,7 +98,7 @@ export function articleBlocks(contentJson: string | null | undefined, body: stri
       const image = articleImage(paragraph);
       blocks.push(image
         ? { id: `legacy-image-${sectionIndex}-${paragraphIndex}`, type: 'image', imageUrl: image.src, alt: image.alt, imageDescription: image.alt }
-        : { id: `legacy-paragraph-${sectionIndex}-${paragraphIndex}`, type: 'paragraph', text: paragraph });
+        : { id: `legacy-paragraph-${sectionIndex}-${paragraphIndex}`, type: 'paragraph', text: paragraph, richText: plainTextDocument(paragraph) });
     });
     return blocks;
   });
@@ -67,7 +107,7 @@ export function articleBlocks(contentJson: string | null | undefined, body: stri
 export function blocksToBody(blocks: ArticleBlock[]) {
   return blocks.map((block) => {
     if (block.type === 'heading') return `## ${block.heading || ''}`;
-    if (block.type === 'paragraph') return block.text || '';
+    if (block.type === 'paragraph') return richTextPlainText(block.richText) || block.text || '';
     return [block.imageHeading, block.imageDescription, block.alt].filter(Boolean).join(' ');
   }).filter(Boolean).join('\n\n');
 }

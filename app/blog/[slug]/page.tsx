@@ -8,6 +8,7 @@ import ReadingProgress from '@/components/ReadingProgress';
 import ShareActions from '@/components/ShareActions';
 import { getPost, getPosts } from '@/lib/content';
 import { articleBlocks, blockSections, readingTime } from '@/lib/blog';
+import RichTextContent from '@/components/RichTextContent';
 import StructuredData from '@/components/StructuredData';
 import { absoluteUrl, siteConfig } from '@/lib/site-config';
 
@@ -63,7 +64,7 @@ export default async function PostPage({ params }: Props) {
         <div className="article-layout">
           <aside className="article-sidebar"><p>In this article</p><nav>{sections.map((section) => <a href={'#' + section.id} key={section.id}>{section.heading}</a>)}</nav><ShareActions title={post.title} /></aside>
           <div className="article-prose">{sections.map((section) => <section id={section.id} key={section.id}><h2>{section.heading}</h2>{section.blocks.map((block) => {
-            if (block.type === 'paragraph') return <p key={block.id}>{block.text}</p>;
+            if (block.type === 'paragraph') return block.richText ? <RichTextContent key={block.id} document={block.richText} /> : <p key={block.id}>{block.text}</p>;
             if (block.type === 'image' && block.imageUrl) return <figure className="article-inline-image" key={block.id}>{block.imageHeading ? <h3>{block.imageHeading}</h3> : null}<div><Image className="article-inline-image-element" src={block.imageUrl} alt={block.alt || 'Article image'} fill sizes="(max-width: 820px) 92vw, 760px" loading="lazy" unoptimized={block.imageUrl.startsWith('/api/media/')} style={{ objectFit: 'contain', objectPosition: 'center' }} /></div>{block.imageDescription ? <figcaption>{block.imageDescription}</figcaption> : null}</figure>;
             return null;
           })}</section>)}</div>

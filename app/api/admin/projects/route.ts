@@ -3,7 +3,7 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { database } from '@/db';
 import { requireAdminApi } from '@/lib/admin';
 import { ensureContentTables } from '@/lib/content';
-import { articleBlocks } from '@/lib/blog';
+import { articleBlocks, richTextPlainText } from '@/lib/blog';
 import { toProjectSlug } from '@/lib/slug';
 import { projectDetails, type ProjectDestination } from '@/lib/project-details';
 import { hasJsonContentType, noStoreHeaders, sameOriginRequest } from '@/lib/request-security';
@@ -32,7 +32,7 @@ function normalizeContent(value: string | null | undefined) {
   if (!blocks.some((block) => block.type === 'heading')) throw new Error('Project content needs a heading');
   for (const block of blocks) {
     if (block.type === 'heading' && !block.heading?.trim()) throw new Error('Every heading needs text');
-    if (block.type === 'paragraph' && !block.text?.trim()) throw new Error('Every paragraph needs text');
+    if (block.type === 'paragraph' && !(richTextPlainText(block.richText) || block.text?.trim())) throw new Error('Every paragraph needs text');
     if (block.type === 'image' && (!block.imageUrl || !block.alt?.trim())) throw new Error('Every image needs a file and alt text');
   }
   return JSON.stringify(blocks);

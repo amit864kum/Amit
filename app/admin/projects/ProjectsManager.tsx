@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { ArrowDown, ArrowUp, Edit3, ExternalLink, Heading2, ImagePlus, Pilcrow, Plus, Search, Star, Trash2, UploadCloud } from 'lucide-react';
 import { useMemo, useState, type ChangeEvent } from 'react';
 import type { Project } from '@/lib/content';
-import { articleBlocks, type ArticleBlock } from '@/lib/blog';
+import { articleBlocks, plainTextDocument, richTextPlainText, type ArticleBlock } from '@/lib/blog';
 import { toProjectSlug } from '@/lib/slug';
 import { projectDetails, type ProjectDetailSettings } from '@/lib/project-details';
 import { useUnsavedChanges } from '@/app/admin/_components/useUnsavedChanges';
 import { uploadAdminFile } from '@/lib/admin-upload-client';
+import RichTextEditor from '@/app/admin/_components/RichTextEditor';
+import ConfirmDialog from '@/app/admin/_components/ConfirmDialog';
 
 const blank: Project = { id: 0, slug: '', title: '', category: '', summary: '', body: '', contentJson: null, tech: '', year: new Date().getFullYear().toString(), imageUrl: '', projectUrl: '', githubUrl: '', featured: 0, destination: 'case_study', published: 1, showOnProjects: 1, detailJson: null, displayOrder: 0 };
 
@@ -34,7 +36,7 @@ function detailSettingsFromForm(form: FormData): ProjectDetailSettings {
 function starterBlocks(): ArticleBlock[] {
   return [
     { id: 'draft-project-heading', type: 'heading', heading: '' },
-    { id: 'draft-project-paragraph', type: 'paragraph', text: '' },
+    { id: 'draft-project-paragraph', type: 'paragraph', text: '', richText: plainTextDocument('') },
   ];
 }
 
@@ -51,6 +53,10 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
   const [orderPending, setOrderPending] = useState(false);
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState('');
+  const [activeStep, setActiveStep] = useState(1);
+  const [destination, setDestination] = useState<Project['destination']>('case_study');
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const featured = orderedProjects.filter((item) => item.featured).length;
   const categories = new Set(orderedProjects.map((item) => item.category)).size;
   const detailSettings = projectDetails(project.detailJson);
@@ -59,15 +65,21 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
     if (!term) return orderedProjects;
     return orderedProjects.filter((item) => `${item.title} ${item.category} ${item.tech} ${item.year}`.toLowerCase().includes(term));
   }, [orderedProjects, query]);
+  const hasError = /^(Could not|Every|Complete|Add at|Invalid|This project|A valid)/.test(status);
 
   useUnsavedChanges(dirty);
   function markDirty() { setDirty(true); setStatus(''); }
+  function goToStep(step: number, id: string) {
+    setActiveStep(step);
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   function resetEditor(force = false) {
     if (!force && dirty && !confirm('Discard the unsaved project changes?')) return;
     setProject(blank);
     setBlocks(starterBlocks());
     setStatus('');
+    setDestination('case_study');
     setDirty(false);
     setEditorVersion((current) => current + 1);
   }
@@ -75,6 +87,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
   function editProject(item: Project) {
     if (dirty && !confirm('Discard the unsaved project changes and open another project?')) return;
     setProject({ ...item, slug: toProjectSlug(item.slug || item.title), imageUrl: item.imageUrl || '' });
+    setDestination(item.destination);
     setBlocks(item.contentJson ? articleBlocks(item.contentJson, '') : []);
     setStatus('');
     setDirty(false);
@@ -86,7 +99,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
     const block: ArticleBlock = type === 'heading'
       ? { id: blockId(), type, heading: '' }
       : type === 'paragraph'
-        ? { id: blockId(), type, text: '' }
+        ? { id: blockId(), type, text: '', richText: plainTextDocument('') }
         : { id: blockId(), type, imageUrl: '', imageHeading: '', imageDescription: '', alt: '' };
     setBlocks((current) => [...current, block]);
     markDirty();
@@ -128,7 +141,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
   async function save(formData: FormData) {
     const incompleteBlock = blocks.find((block) =>
       (block.type === 'heading' && !block.heading?.trim())
-      || (block.type === 'paragraph' && !block.text?.trim())
+      || (block.type === 'paragraph' && !(richTextPlainText(block.richText) || block.text?.trim()))
       || (block.type === 'image' && (!block.imageUrl || !block.alt?.trim())),
     );
     if (incompleteBlock) {
@@ -158,24 +171,28 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
           detailJson: JSON.stringify(detailSettingsFromForm(formData)),
           imageUrl,
           featured: formData.get('featured') ? 1 : 0,
-          published: formData.get('published') ? 1 : 0,
+          published: formData.get('intent') === 'draft' ? 0 : formData.get('published') ? 1 : 0,
           showOnProjects: formData.get('showOnProjects') ? 1 : 0,
         }),
       });
-      if (!response.ok) throw new Error('Save failed');
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(payload?.error || 'Could not save this project.');
+      }
       resetEditor(true);
       setStatus('Project and content sections saved successfully.');
       router.refresh();
-    } catch {
-      setStatus('Could not save this project.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not save this project.');
     } finally { setSaving(false); }
   }
 
   async function remove(id: number) {
-    if (!confirm('Delete this project permanently?')) return;
+    setDeleting(true);
     const response = await fetch('/api/admin/projects', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }) });
-    if (response.ok) { if (project.id === id) resetEditor(true); setStatus('Project deleted.'); router.refresh(); }
+    if (response.ok) { if (project.id === id) resetEditor(true); setStatus('Project deleted.'); setDeleteTarget(null); router.refresh(); }
     else setStatus('Could not delete this project. Please try again.');
+    setDeleting(false);
   }
 
   async function move(index: number, direction: -1 | 1) {
@@ -204,23 +221,28 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
       <section className="studio-records" aria-label="Projects"><div className="studio-section-title"><div><small>Portfolio inventory</small><h2>Published work</h2></div><span>{orderedProjects.length} records</span></div>
         <div className="studio-library-tools"><label><Search aria-hidden="true" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search projects" aria-label="Search projects" /></label><span>{visibleProjects.length} shown</span></div>
         <div className="studio-order-help"><div><strong>Public display order</strong><p>Position 01 appears first in the project collection.</p></div><span aria-live="polite">{orderStatus}</span></div>
-        <div className="studio-record-list">{visibleProjects.length ? visibleProjects.map((item) => { const index = orderedProjects.findIndex((projectItem) => projectItem.id === item.id); const href = destinationHref(item); return <article key={item.id} className={project.id === item.id ? 'is-selected' : ''}><span className="studio-record-index">{String(index + 1).padStart(2, '0')}</span><div className="studio-record-copy"><div><small>{item.category} · {item.year} · {item.published ? item.destination.replace('_', ' ') : 'draft'}</small>{item.featured ? <b><Star /> Featured</b> : null}</div><h3>{item.title}</h3><p>{item.summary}</p><div className="studio-tech-preview">{item.tech.split(',').slice(0, 3).map((tech) => <span key={tech}>{tech.trim()}</span>)}</div></div><div className="studio-order-controls" aria-label={`Change display position for ${item.title}`}><button type="button" onClick={() => move(index, -1)} disabled={index === 0 || orderPending || Boolean(query)} aria-label={`Move ${item.title} up`} title={query ? 'Clear search to reorder' : 'Move up'}><ArrowUp /></button><button type="button" onClick={() => move(index, 1)} disabled={index === orderedProjects.length - 1 || orderPending || Boolean(query)} aria-label={`Move ${item.title} down`} title={query ? 'Clear search to reorder' : 'Move down'}><ArrowDown /></button></div><div className="studio-record-actions">{href ? <a href={href} target="_blank" rel="noreferrer" aria-label={`View ${item.title}`}><ExternalLink /></a> : null}<button type="button" onClick={() => editProject(item)} aria-label={`Edit ${item.title}`}><Edit3 /></button><button type="button" className="danger" onClick={() => remove(item.id)} aria-label={`Delete ${item.title}`}><Trash2 /></button></div></article>; }) : <div className="studio-library-empty"><Search aria-hidden="true" /><strong>No matching projects</strong><p>Try a title, discipline, year, or technology.</p><button type="button" onClick={() => setQuery('')}>Clear search</button></div>}</div>
+        <div className="studio-record-list">{visibleProjects.length ? visibleProjects.map((item) => { const index = orderedProjects.findIndex((projectItem) => projectItem.id === item.id); const href = destinationHref(item); return <article key={item.id} className={project.id === item.id ? 'is-selected' : ''}><span className="studio-record-index">{String(index + 1).padStart(2, '0')}</span><div className="studio-record-copy"><div><small>{item.category} · {item.year} · {item.published ? item.destination.replace('_', ' ') : 'draft'}</small>{item.featured ? <b><Star /> Featured</b> : null}</div><h3>{item.title}</h3><p>{item.summary}</p><div className="studio-tech-preview">{item.tech.split(',').slice(0, 3).map((tech) => <span key={tech}>{tech.trim()}</span>)}</div></div><div className="studio-order-controls" aria-label={`Change display position for ${item.title}`}><button type="button" onClick={() => move(index, -1)} disabled={index === 0 || orderPending || Boolean(query)} aria-label={`Move ${item.title} up`} title={query ? 'Clear search to reorder' : 'Move up'}><ArrowUp /></button><button type="button" onClick={() => move(index, 1)} disabled={index === orderedProjects.length - 1 || orderPending || Boolean(query)} aria-label={`Move ${item.title} down`} title={query ? 'Clear search to reorder' : 'Move down'}><ArrowDown /></button></div><div className="studio-record-actions">{href ? <a href={href} target="_blank" rel="noreferrer" aria-label={`View ${item.title}`}><ExternalLink /></a> : null}<button type="button" onClick={() => editProject(item)} aria-label={`Edit ${item.title}`}><Edit3 /></button><button type="button" className="danger" onClick={() => setDeleteTarget(item)} aria-label={`Delete ${item.title}`}><Trash2 /></button></div></article>; }) : <div className="studio-library-empty"><Search aria-hidden="true" /><strong>No matching projects</strong><p>Try a title, discipline, year, or technology.</p><button type="button" onClick={() => setQuery('')}>Clear search</button></div>}</div>
       </section>
 
       <form id="project-editor" className="studio-editor studio-post-editor" action={save} onChange={markDirty} key={`${project.id}-${editorVersion}`}>
         <div className="studio-section-title"><div><small>{project.id ? 'Editing record' : 'New record'}</small><h2>{project.id ? project.title : 'Build a project story'}</h2></div>{project.id ? <button type="button" onClick={() => resetEditor()}>Clear</button> : <ImagePlus />}</div>
-        <div className="studio-form-grid studio-post-meta">
-          <label className="full">Project title<input name="title" required defaultValue={project.title} /></label>
-          <label>URL slug<input name="slug" required defaultValue={project.slug} placeholder="thermal-fluid-and-transport-laboratory" autoCapitalize="none" /><small>Spaces and capital letters are converted automatically.</small></label>
-          <label>Year<input name="year" required defaultValue={project.year} /></label>
-          <label className="full">Category<input name="category" required defaultValue={project.category} /></label>
+        <nav className="studio-workflow" aria-label="Project creation steps">
+          {[['Essentials', 'project-essentials'], ['Case study', 'project-content-builder-title'], ['Page design', 'project-detail-settings-title'], ['Publish', 'project-publishing']].map(([label, id], index) => <button key={id} type="button" className={activeStep === index + 1 ? 'active' : ''} aria-current={activeStep === index + 1 ? 'step' : undefined} onClick={() => goToStep(index + 1, id)}><span>{index + 1}</span>{label}</button>)}
+        </nav>
+        {hasError ? <div className="studio-error-summary" role="alert" tabIndex={-1}><strong>Review the project before saving</strong><p>{status}</p></div> : null}
+        <section id="project-essentials" className="studio-form-grid studio-post-meta studio-workflow-section">
+          <div className="studio-workflow-heading full"><small>Step 1</small><h3>Project essentials</h3><p>Start with the information used across project cards, search results, and the case-study header.</p></div>
+          <label className="full">Project title<input name="title" required defaultValue={project.title} onBlur={(event) => { const slug = document.getElementById('project-slug') as HTMLInputElement | null; if (slug && !slug.value.trim()) slug.value = toProjectSlug(event.target.value); }} /></label>
+          <label>URL slug<input id="project-slug" name="slug" required defaultValue={project.slug} placeholder="thermal-fluid-and-transport-laboratory" autoCapitalize="none" /><small>Generated from the title; edit only when a custom URL is needed.</small></label>
+          <label>Year<input name="year" type="number" min="2000" max={new Date().getFullYear() + 1} required defaultValue={project.year} /></label>
+          <label className="full">Category<input name="category" list="project-categories" required defaultValue={project.category} placeholder="e.g. Full-stack engineering" /><datalist id="project-categories">{[...new Set(orderedProjects.map((item) => item.category))].filter(Boolean).map((category) => <option value={category} key={category} />)}</datalist></label>
           <label className="full">Short summary<textarea name="summary" required rows={3} defaultValue={project.summary} /></label>
           <label className="full">Case study overview<textarea name="body" required rows={7} defaultValue={project.body} /><small>This introductory narrative appears before the structured content sections below.</small></label>
-          <label className="full">Technology stack<input name="tech" required defaultValue={project.tech} /></label>
-          <label>Live URL<input name="projectUrl" type="url" defaultValue={project.projectUrl || ''} /></label>
-          <label>GitHub URL<input name="githubUrl" type="url" defaultValue={project.githubUrl || ''} /></label>
-          <label className="full">Project destination<select name="destination" defaultValue={project.destination}><option value="case_study">Dedicated case-study page</option><option value="live">Redirect to live URL</option><option value="github">Redirect to GitHub URL</option></select><small>The project card follows this destination. External destinations disable the dedicated public page.</small></label>
-        </div>
+          <label className="full">Technology stack<input name="tech" required defaultValue={project.tech} placeholder="Next.js, TypeScript, PostgreSQL" /><small>Separate technologies with commas. They become individual labels on the public page.</small></label>
+          <label className="full">Project destination<select name="destination" value={destination} onChange={(event) => setDestination(event.target.value as Project['destination'])}><option value="case_study">Dedicated case-study page</option><option value="live">Redirect to live URL</option><option value="github">Redirect to GitHub URL</option></select><small>The project card follows this destination. External destinations disable the dedicated public page.</small></label>
+          {destination !== 'github' ? <label>Live URL<input name="projectUrl" type="url" required={destination === 'live'} defaultValue={project.projectUrl || ''} placeholder="https://" /></label> : <input type="hidden" name="projectUrl" value={project.projectUrl || ''} />}
+          {destination !== 'live' ? <label>GitHub URL<input name="githubUrl" type="url" required={destination === 'github'} defaultValue={project.githubUrl || ''} placeholder="https://github.com/" /></label> : <input type="hidden" name="githubUrl" value={project.githubUrl || ''} />}
+        </section>
 
         <section className="studio-block-builder" aria-labelledby="project-content-builder-title">
           <header><div><small>Project narrative</small><h3 id="project-content-builder-title">Content sections</h3><p>Arrange headings, paragraphs, and screenshots in the exact order they should appear on the public project page.</p></div><span>{blocks.length} blocks</span></header>
@@ -233,7 +255,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
             {blocks.map((block, index) => <article id={`project-block-${block.id}`} className={`studio-content-block type-${block.type}`} key={block.id}>
               <header><div><span>{String(index + 1).padStart(2, '0')}</span><b>{block.type === 'heading' ? 'Section heading' : block.type === 'paragraph' ? 'Paragraph' : 'Project screenshot'}</b></div><div><button type="button" onClick={() => moveBlock(index, -1)} disabled={index === 0} aria-label={`Move content block ${index + 1} up`}><ArrowUp /></button><button type="button" onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} aria-label={`Move content block ${index + 1} down`}><ArrowDown /></button><button type="button" className="danger" onClick={() => { if (confirm(`Delete content block ${index + 1}?`)) { setBlocks((current) => current.filter((item) => item.id !== block.id)); markDirty(); } }} aria-label={`Delete content block ${index + 1}`}><Trash2 /></button></div></header>
               {block.type === 'heading' ? <label htmlFor={`project-heading-${block.id}`}>Heading<input id={`project-heading-${block.id}`} required value={block.heading || ''} onChange={(event) => updateBlock(block.id, { heading: event.target.value })} placeholder="A clear section heading" /></label> : null}
-              {block.type === 'paragraph' ? <label htmlFor={`project-paragraph-${block.id}`}>Paragraph<textarea id={`project-paragraph-${block.id}`} required rows={6} value={block.text || ''} onChange={(event) => updateBlock(block.id, { text: event.target.value })} placeholder="Explain this part of the project…" /></label> : null}
+              {block.type === 'paragraph' ? <div className="studio-rich-field"><span>Rich text</span><RichTextEditor id={`project-paragraph-${block.id}`} label={`Project content block ${index + 1}`} value={block.richText || plainTextDocument(block.text || '')} onChange={(richText) => updateBlock(block.id, { richText, text: richTextPlainText(richText) })} /></div> : null}
               {block.type === 'image' ? <div className="studio-image-block">
                 <div className={`studio-image-preview${block.imageUrl ? ' has-image' : ''}`}>{block.imageUrl ? <Image src={block.imageUrl} alt="" fill sizes="(max-width: 1180px) 100vw, 420px" unoptimized={block.imageUrl.startsWith('/api/media/')} /> : <><ImagePlus /><span>No screenshot uploaded</span></>}</div>
                 <div className="studio-image-fields">
@@ -260,15 +282,17 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
           </div>
         </section>
 
-        <div className="studio-form-grid studio-post-settings">
+        <section id="project-publishing" className="studio-form-grid studio-post-settings studio-workflow-section">
+          <div className="studio-workflow-heading full"><small>Step 4</small><h3>Media and publishing</h3><p>Review the public destination, main visual, visibility, and homepage priority before saving.</p></div>
           <label className="full studio-file-field"><span>Main project screenshot</span><input name="image" type="file" accept="image/png,image/jpeg,image/webp" /><small>Optional cover-style screenshot shown near the top of the project page.</small></label>
           {project.imageUrl ? <label className="studio-check full"><input name="removeImage" type="checkbox" /> Remove current main screenshot</label> : null}
           <label className="studio-switch full"><input name="featured" type="checkbox" defaultChecked={Boolean(project.featured)} /><span /><div><strong>Feature on homepage</strong><small>Give this project priority in the public portfolio.</small></div></label>
           <label className="studio-switch full"><input name="showOnProjects" type="checkbox" defaultChecked={Boolean(project.showOnProjects)} /><span /><div><strong>Show on Projects page</strong><small>Display this card in the public project collection.</small></div></label>
           <label className="studio-switch full"><input name="published" type="checkbox" defaultChecked={Boolean(project.published)} /><span /><div><strong>Published</strong><small>Draft projects remain available only inside the admin panel.</small></div></label>
-        </div>
-        <div className="studio-editor-foot"><span className={status.startsWith('Could not') || status.startsWith('Every') || status.startsWith('Complete') || status.startsWith('Add at') ? 'is-error' : ''} role="status" aria-live="polite">{status || (dirty ? 'Unsaved changes' : 'All changes saved')}</span><button className="studio-save" type="submit" disabled={Boolean(uploadingBlock) || saving} aria-busy={saving}>{saving ? 'Saving…' : project.id ? 'Update project' : 'Publish project'}</button></div>
+        </section>
+        <div className="studio-editor-foot"><span className={hasError ? 'is-error' : ''} role="status" aria-live="polite">{status || (dirty ? 'Unsaved changes' : 'All changes saved')}</span><div className="studio-editor-actions">{project.id && destination === 'case_study' ? <a href={`/projects/${toProjectSlug(project.slug || project.title)}`} target="_blank" rel="noreferrer">Preview <ExternalLink /></a> : null}<button className="studio-save-draft" type="submit" name="intent" value="draft" disabled={Boolean(uploadingBlock) || saving}>Save draft</button><button className="studio-save" type="submit" name="intent" value="save" disabled={Boolean(uploadingBlock) || saving} aria-busy={saving}>{saving ? 'Saving…' : project.id ? 'Update project' : 'Save project'}</button></div></div>
       </form>
     </div>
+    <ConfirmDialog open={Boolean(deleteTarget)} title={`Delete “${deleteTarget?.title || 'project'}”?`} description="This permanently removes the project and its managed images. This action cannot be undone." busy={deleting} onCancel={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && remove(deleteTarget.id)} />
   </>;
 }
