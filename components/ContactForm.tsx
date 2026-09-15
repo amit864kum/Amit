@@ -13,7 +13,6 @@ type Draft = { name: string; email: string; contactNumber: string };
 const emptyDraft: Draft = { name: '', email: '', contactNumber: '' };
 
 export default function ContactForm() {
-  const startedAtInputRef = useRef<HTMLInputElement>(null);
   const turnstileRef = useRef<HTMLDivElement>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
@@ -21,10 +20,6 @@ export default function ContactForm() {
   const [error, setError] = useState('');
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [draftReady, setDraftReady] = useState(false);
-
-  useEffect(() => {
-    if (startedAtInputRef.current) startedAtInputRef.current.value = String(Date.now());
-  }, [state]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -111,8 +106,6 @@ export default function ContactForm() {
   </div>;
 
   return <form className="contact-wizard contact-form-premium contact-simple-form" action={submit}>
-    <input ref={startedAtInputRef} type="hidden" name="startedAt" defaultValue="" />
-    <label className="contact-honeypot" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" /></label>
     <header className="contact-wizard-head contact-simple-head">
       <div className="contact-wizard-brand"><span><Sparkles aria-hidden="true" /></span><div><b>Contact</b><small>Amit Kumar / Independent practice</small></div></div>
     </header>

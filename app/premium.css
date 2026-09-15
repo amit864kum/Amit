@@ -1684,7 +1684,6 @@ html[data-theme='light'] .projects-hero{--ph-bg:#f8faff;--ph-ink:#0b1231;--ph-co
   .projects-method-panel:hover,.projects-focus-panel:hover,.projects-thinking-panel:hover,.projects-method-step:hover .projects-step-icon,.projects-method-step:hover .projects-step-icon svg,.projects-focus-panel li:hover,.projects-focus-panel li:hover svg,.projects-thinking-panel li:hover>span,.projects-thinking-panel li:hover>span svg,.projects-hero-actions>a:hover,.project-showcase-card>a:hover .project-showcase-art img,.project-showcase-card>a:hover .project-showcase-monogram span,.project-showcase-card>a:hover .project-showcase-copy footer svg{transform:none}
 }
 
-.contact-honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important}
 .contact-turnstile{min-height:65px;margin-top:18px}
 
 @media (prefers-reduced-motion: reduce){

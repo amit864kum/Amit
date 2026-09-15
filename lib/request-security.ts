@@ -54,13 +54,18 @@ export async function rateLimit(request: Request, options: RateLimitOptions) {
 export function sameOriginRequest(request: Request) {
   const origin = request.headers.get('origin');
   const fetchSite = request.headers.get('sec-fetch-site');
-  if (fetchSite === 'same-origin') return true;
-  if (fetchSite && fetchSite !== 'none') return false;
-  if (!origin) return false;
   try {
     const requestOrigin = new URL(request.url).origin;
     const configuredOrigin = config('SITE_URL');
-    return origin === requestOrigin || Boolean(configuredOrigin && origin === new URL(configuredOrigin).origin);
+    const allowedOrigins = new Set([requestOrigin]);
+    if (configuredOrigin) allowedOrigins.add(new URL(configuredOrigin).origin);
+    for (const hostname of [process.env.VERCEL_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]) {
+      if (hostname) allowedOrigins.add(new URL(`https://${hostname}`).origin);
+    }
+    // Origin is the authoritative browser signal. Vercel can label two matching
+    // origins as "same-site" when a deployment and its alias share a site.
+    if (origin) return allowedOrigins.has(new URL(origin).origin) && origin !== 'null';
+    return fetchSite === 'same-origin';
   } catch { return false; }
 }
 
@@ -79,12 +84,6 @@ export function noStoreHeaders(extra?: HeadersInit) {
   headers.set('cache-control', 'no-store, max-age=0');
   headers.set('pragma', 'no-cache');
   return headers;
-}
-
-export function validSubmissionTiming(value: string) {
-  const started = Number(value);
-  const elapsed = Date.now() - started;
-  return Number.isFinite(started) && started > 0 && elapsed >= 0 && elapsed <= 2 * 60 * 60 * 1000;
 }
 
 export async function verifyTurnstile(token: string, request: Request) {

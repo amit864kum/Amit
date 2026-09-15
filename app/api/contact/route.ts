@@ -7,7 +7,6 @@ import {
   noStoreHeaders,
   rateLimit,
   sameOriginRequest,
-  validSubmissionTiming,
   verifyTurnstile,
 } from '@/lib/request-security';
 
@@ -21,7 +20,10 @@ function json(payload: Record<string, unknown>, status = 200, headers?: HeadersI
 export async function POST(request: Request) {
   let stage = 'request';
   try {
-    if (!sameOriginRequest(request)) return json({ error: 'The request could not be verified.' }, 403);
+    if (!sameOriginRequest(request)) {
+      console.warn('Contact enquiry rejected', { reason: 'origin' });
+      return json({ error: 'This form session could not be verified. Refresh the page and try again.' }, 403);
+    }
     if (!databaseConfigured()) {
       return json({
         error: process.env.NODE_ENV === 'production'
@@ -47,12 +49,11 @@ export async function POST(request: Request) {
     const email = String(form.get('email') || '').trim().toLowerCase();
     // Accept the previous field name while any cached clients are still open.
     const contactNumber = String(form.get('contactNumber') || form.get('contactDetails') || '').trim();
-    const honeypot = String(form.get('website') || '').trim();
-    const startedAt = String(form.get('startedAt') || '');
     const turnstileToken = String(form.get('cf-turnstile-response') || '');
 
-    if (honeypot || !validSubmissionTiming(startedAt) || looksLikeSpam([name, email, contactNumber])) {
-      return json({ error: 'The request could not be verified.' }, 400);
+    if (looksLikeSpam([name, email, contactNumber])) {
+      console.warn('Contact enquiry rejected', { reason: 'spam_pattern' });
+      return json({ error: 'The enquiry could not be verified. Please email Amit directly if this continues.' }, 400);
     }
     if (
       name.length < 2 || name.length > 80
