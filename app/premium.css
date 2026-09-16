@@ -2917,3 +2917,47 @@ html[data-theme='light'] .article-inline-image>div{
 .structured-rich-text code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
 .structured-rich-text :not(pre)>code{padding:.15em .38em;border-radius:5px;background:var(--raised)}
 .structured-rich-text a{color:var(--gold-strong);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+
+/* Project capabilities: turn semantic rich-text lists into a scannable case-study grid. */
+.project-case-page .project-walkthrough-flow .structured-rich-text ul{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px 18px;
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+.project-case-page .project-walkthrough-flow .structured-rich-text ul li{
+  position:relative;
+  min-width:0;
+  margin:0;
+  padding:18px 20px 18px 48px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:color-mix(in srgb,var(--surface) 72%,transparent);
+  color:var(--muted);
+  font-size:clamp(15px,1.1vw,17px);
+  line-height:1.65;
+}
+.project-case-page .project-walkthrough-flow .structured-rich-text ul li::before{
+  content:'\2713';
+  position:absolute;
+  top:20px;
+  left:20px;
+  display:grid;
+  place-items:center;
+  width:18px;
+  height:18px;
+  border:1px solid color-mix(in srgb,var(--pc-violet) 45%,var(--line));
+  border-radius:50%;
+  color:var(--pc-violet);
+  font-size:10px;
+  font-weight:800;
+  line-height:1;
+}
+.project-case-page .project-walkthrough-flow .structured-rich-text li>p{margin:0}
+@media(max-width:720px){
+  .project-case-page .project-walkthrough-flow .structured-rich-text ul{grid-template-columns:1fr;gap:10px}
+  .project-case-page .project-walkthrough-flow .structured-rich-text ul li{padding:16px 16px 16px 44px;font-size:15px}
+  .project-case-page .project-walkthrough-flow .structured-rich-text ul li::before{top:18px;left:17px}
+}

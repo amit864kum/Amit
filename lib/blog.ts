@@ -23,13 +23,39 @@ export type RichTextNode = {
 
 export type RichTextDocument = RichTextNode & { type: 'doc'; content?: RichTextNode[] };
 
+function legacyBulletList(value: string): RichTextNode | null {
+  const normalized = value.replace(/\r/g, '').trim();
+  if (!/^\*\s+\S/.test(normalized)) return null;
+
+  const items = normalized
+    .replace(/^\*\s+/, '')
+    .split(/\s+\*\s+(?=\S)/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (items.length < 2) return null;
+  return {
+    type: 'bulletList',
+    content: items.map((item) => ({
+      type: 'listItem',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: item }] }],
+    })),
+  };
+}
+
+function upgradeLegacyRichTextNode(node: RichTextNode): RichTextNode {
+  if (node.type !== 'paragraph' || !node.content?.length) return node;
+  if (!node.content.every((child) => child.type === 'text' && !child.marks?.length)) return node;
+  return legacyBulletList(node.content.map((child) => child.text || '').join('')) || node;
+}
+
 export function plainTextDocument(value: string): RichTextDocument {
   return {
     type: 'doc',
-    content: value.split(/\n{2,}/).filter(Boolean).map((text) => ({
-      type: 'paragraph',
-      content: [{ type: 'text', text }],
-    })),
+    content: value.split(/\n{2,}/).filter(Boolean).map((text) => legacyBulletList(text) || ({
+        type: 'paragraph',
+        content: [{ type: 'text', text }],
+      })),
   };
 }
 
@@ -46,7 +72,7 @@ function normalizeRichText(value: unknown): RichTextDocument | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
   const document = value as RichTextDocument;
   if (document.type !== 'doc' || !Array.isArray(document.content)) return undefined;
-  return document;
+  return { ...document, content: document.content.map(upgradeLegacyRichTextNode) };
 }
 
 export type ArticleBlock = {
