@@ -39,9 +39,17 @@ export const defaultProjectDetails: ProjectDetailSettings = {
 };
 
 const asText = (value: unknown, fallback: string) => typeof value === 'string' ? value : fallback;
-const contextualText = (value: unknown, generic: string, fallback: string) => typeof value === 'string' && value.trim() && value !== generic ? value : fallback;
+const normalizedText = (value: unknown) => typeof value === 'string'
+  ? value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+  : '';
+const authoredText = (value: unknown, rejected: unknown[], fallback = '') => {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text) return fallback;
+  const normalized = normalizedText(text);
+  return rejected.some((candidate) => normalized && normalized === normalizedText(candidate)) ? fallback : text;
+};
 
-function contextualProjectDetails(project?: ProjectDetailContext): ProjectDetailSettings {
+function legacyContextualProjectDetails(project?: ProjectDetailContext): ProjectDetailSettings {
   if (!project) return structuredClone(defaultProjectDetails);
   const tools = project.tech.split(',').map((item) => item.trim()).filter(Boolean);
   const primaryTools = tools.slice(0, 3).join(', ');
@@ -71,23 +79,67 @@ function contextualProjectDetails(project?: ProjectDetailContext): ProjectDetail
   };
 }
 
+function minimalProjectDetails(): ProjectDetailSettings {
+  return {
+    contextHeading: 'Project context', contextAccent: '', contextDescription: '', designIntent: '',
+    walkthroughHeading: 'Inside the product,', walkthroughAccent: 'step by step.', walkthroughDescription: '',
+    systemHeading: '', systemAccent: '', systemDescription: '', systemSteps: [], principles: [],
+    ctaEyebrow: '', ctaHeading: '', ctaAccent: '',
+  };
+}
+
+function sameSteps(left: unknown, right: unknown) {
+  if (!Array.isArray(left) || !Array.isArray(right)) return false;
+  const signature = (items: unknown[]) => items.map((item) => {
+    const value = item && typeof item === 'object' ? item as Record<string, unknown> : {};
+    return [normalizedText(value.label), normalizedText(value.title), normalizedText(value.description)];
+  });
+  return JSON.stringify(signature(left)) === JSON.stringify(signature(right));
+}
+
+function samePrinciples(left: unknown, right: unknown) {
+  if (!Array.isArray(left) || !Array.isArray(right)) return false;
+  const signature = (items: unknown[]) => items.map((item) => {
+    const value = item && typeof item === 'object' ? item as Record<string, unknown> : {};
+    return [normalizedText(value.title), normalizedText(value.description)];
+  });
+  return JSON.stringify(signature(left)) === JSON.stringify(signature(right));
+}
+
 export function projectDetails(value: string | null | undefined, project?: ProjectDetailContext): ProjectDetailSettings {
-  const defaults = contextualProjectDetails(project);
+  const defaults = minimalProjectDetails();
+  const legacy = legacyContextualProjectDetails(project);
   if (!value) return defaults;
   try {
     const parsed = JSON.parse(value) as Partial<ProjectDetailSettings>;
-    const hasGenericSteps = JSON.stringify(parsed.systemSteps) === JSON.stringify(defaultProjectDetails.systemSteps);
-    const hasGenericPrinciples = JSON.stringify(parsed.principles) === JSON.stringify(defaultProjectDetails.principles);
-    const steps = Array.isArray(parsed.systemSteps) && !hasGenericSteps ? parsed.systemSteps.slice(0, 3) : defaults.systemSteps;
-    const principles = Array.isArray(parsed.principles) && !hasGenericPrinciples ? parsed.principles.slice(0, 3) : defaults.principles;
+    const hasGeneratedSteps = sameSteps(parsed.systemSteps, defaultProjectDetails.systemSteps) || sameSteps(parsed.systemSteps, legacy.systemSteps);
+    const hasGeneratedPrinciples = samePrinciples(parsed.principles, defaultProjectDetails.principles) || samePrinciples(parsed.principles, legacy.principles);
+    const steps = Array.isArray(parsed.systemSteps) && !hasGeneratedSteps ? parsed.systemSteps.slice(0, 3) : [];
+    const principles = Array.isArray(parsed.principles) && !hasGeneratedPrinciples ? parsed.principles.slice(0, 3) : [];
+    const repeatedProjectCopy = project ? [project.summary, project.body] : [];
     return {
-      contextHeading: contextualText(parsed.contextHeading, defaultProjectDetails.contextHeading, defaults.contextHeading), contextAccent: contextualText(parsed.contextAccent, defaultProjectDetails.contextAccent, defaults.contextAccent),
-      contextDescription: contextualText(parsed.contextDescription, defaultProjectDetails.contextDescription, defaults.contextDescription), designIntent: contextualText(parsed.designIntent, defaultProjectDetails.designIntent, defaults.designIntent),
-      walkthroughHeading: contextualText(parsed.walkthroughHeading, defaultProjectDetails.walkthroughHeading, defaults.walkthroughHeading), walkthroughAccent: contextualText(parsed.walkthroughAccent, defaultProjectDetails.walkthroughAccent, defaults.walkthroughAccent), walkthroughDescription: contextualText(parsed.walkthroughDescription, defaultProjectDetails.walkthroughDescription, defaults.walkthroughDescription),
-      systemHeading: contextualText(parsed.systemHeading, defaultProjectDetails.systemHeading, defaults.systemHeading), systemAccent: contextualText(parsed.systemAccent, defaultProjectDetails.systemAccent, defaults.systemAccent), systemDescription: contextualText(parsed.systemDescription, defaultProjectDetails.systemDescription, defaults.systemDescription),
-      systemSteps: Array.from({ length: 3 }, (_, index) => ({ label: asText(steps[index]?.label, ''), title: asText(steps[index]?.title, ''), description: asText(steps[index]?.description, '') })),
-      principles: Array.from({ length: 3 }, (_, index) => ({ title: asText(principles[index]?.title, ''), description: asText(principles[index]?.description, '') })),
-      ctaEyebrow: contextualText(parsed.ctaEyebrow, defaultProjectDetails.ctaEyebrow, defaults.ctaEyebrow), ctaHeading: contextualText(parsed.ctaHeading, defaultProjectDetails.ctaHeading, defaults.ctaHeading), ctaAccent: contextualText(parsed.ctaAccent, defaultProjectDetails.ctaAccent, defaults.ctaAccent),
+      contextHeading: authoredText(parsed.contextHeading, [defaultProjectDetails.contextHeading, legacy.contextHeading], defaults.contextHeading),
+      contextAccent: authoredText(parsed.contextAccent, [defaultProjectDetails.contextAccent, legacy.contextAccent], defaults.contextAccent),
+      contextDescription: authoredText(parsed.contextDescription, [defaultProjectDetails.contextDescription, legacy.contextDescription, ...repeatedProjectCopy]),
+      designIntent: authoredText(parsed.designIntent, [defaultProjectDetails.designIntent, legacy.designIntent, ...repeatedProjectCopy]),
+      walkthroughHeading: authoredText(parsed.walkthroughHeading, [defaultProjectDetails.walkthroughHeading, legacy.walkthroughHeading], defaults.walkthroughHeading),
+      walkthroughAccent: authoredText(parsed.walkthroughAccent, [defaultProjectDetails.walkthroughAccent, legacy.walkthroughAccent], defaults.walkthroughAccent),
+      walkthroughDescription: authoredText(parsed.walkthroughDescription, [defaultProjectDetails.walkthroughDescription, legacy.walkthroughDescription]),
+      systemHeading: authoredText(parsed.systemHeading, [defaultProjectDetails.systemHeading, legacy.systemHeading]),
+      systemAccent: authoredText(parsed.systemAccent, [defaultProjectDetails.systemAccent, legacy.systemAccent]),
+      systemDescription: authoredText(parsed.systemDescription, [defaultProjectDetails.systemDescription, legacy.systemDescription, ...repeatedProjectCopy]),
+      systemSteps: steps.map((step) => ({
+        label: asText(step?.label, '').trim(),
+        title: asText(step?.title, '').trim(),
+        description: authoredText(step?.description, repeatedProjectCopy),
+      })),
+      principles: principles.map((principle) => ({
+        title: asText(principle?.title, '').trim(),
+        description: authoredText(principle?.description, repeatedProjectCopy),
+      })),
+      ctaEyebrow: authoredText(parsed.ctaEyebrow, [defaultProjectDetails.ctaEyebrow, legacy.ctaEyebrow]),
+      ctaHeading: authoredText(parsed.ctaHeading, [defaultProjectDetails.ctaHeading, legacy.ctaHeading]),
+      ctaAccent: authoredText(parsed.ctaAccent, [defaultProjectDetails.ctaAccent, legacy.ctaAccent]),
     };
   } catch { return defaults; }
 }

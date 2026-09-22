@@ -106,8 +106,8 @@ export default function BlogManager({ posts }: { posts: Post[] }) {
       const imageUrl = await uploadAdminFile(file);
       updateBlock(block.id, { imageUrl: imageUrl || '', alt: block.alt || file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ') });
       setStatus('Image added to the article.');
-    } catch {
-      setStatus('Could not upload this image. Use a PNG, JPEG, or WebP under 8 MB.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not upload this image. Use a PNG, JPEG, WebP, or AVIF file under 8 MB.');
     } finally {
       setUploadingBlock(null);
     }
@@ -198,7 +198,7 @@ export default function BlogManager({ posts }: { posts: Post[] }) {
               {block.type === 'image' ? <div className="studio-image-block">
                 <div className={`studio-image-preview${block.imageUrl ? ' has-image' : ''}`}>{block.imageUrl ? <Image src={block.imageUrl} alt="" fill sizes="(max-width: 1180px) 100vw, 420px" unoptimized={block.imageUrl.startsWith('/api/media/')} style={{ objectFit: 'contain', objectPosition: 'center' }} /> : <><ImagePlus /><span>No image uploaded</span></>}</div>
                 <div className="studio-image-fields">
-                  <label className="studio-block-upload"><span>{uploadingBlock === block.id ? 'Uploading…' : block.imageUrl ? 'Replace image' : 'Upload image'}</span><input type="file" accept="image/png,image/jpeg,image/webp" disabled={Boolean(uploadingBlock)} onChange={(event) => uploadBlockImage(block, event)} /><UploadCloud /></label>
+                  <label className="studio-block-upload"><span>{uploadingBlock === block.id ? 'Uploading…' : block.imageUrl ? 'Replace image' : 'Upload image'}</span><input type="file" accept="image/png,image/jpeg,image/webp,image/avif,.png,.jpg,.jpeg,.webp,.avif" disabled={Boolean(uploadingBlock)} onChange={(event) => uploadBlockImage(block, event)} /><UploadCloud /></label>
                   <label htmlFor={`image-heading-${block.id}`}>Image heading <small>Optional</small><input id={`image-heading-${block.id}`} value={block.imageHeading || ''} onChange={(event) => updateBlock(block.id, { imageHeading: event.target.value })} placeholder="What should readers notice?" /></label>
                   <label htmlFor={`image-description-${block.id}`}>Description <small>Optional</small><textarea id={`image-description-${block.id}`} rows={3} value={block.imageDescription || ''} onChange={(event) => updateBlock(block.id, { imageDescription: event.target.value })} placeholder="Explain why this visual matters here." /></label>
                   <label htmlFor={`image-alt-${block.id}`}>Alt text <small>Required</small><input id={`image-alt-${block.id}`} required value={block.alt || ''} onChange={(event) => updateBlock(block.id, { alt: event.target.value })} placeholder="Describe the image for screen readers" /></label>
@@ -211,7 +211,7 @@ export default function BlogManager({ posts }: { posts: Post[] }) {
 
         <section id="article-publishing" className="studio-form-grid studio-post-settings studio-workflow-section">
           <div className="studio-workflow-heading full"><small>Step 3</small><h3>Media and publishing</h3><p>Add an optional cover, choose the publication date, and decide whether the article is a draft or publicly available.</p></div>
-          <label className="studio-file-field"><span>Cover image</span><input name="image" type="file" accept="image/png,image/jpeg,image/webp" /></label>
+          <label className="studio-file-field"><span>Cover image</span><input name="image" type="file" accept="image/png,image/jpeg,image/webp,image/avif,.png,.jpg,.jpeg,.webp,.avif" /><small>PNG, JPEG, WebP, or AVIF up to 8 MB.</small></label>
           <label>Publish date<input name="publishedAt" type="date" required defaultValue={post.publishedAt} /></label>
           {post.imageUrl ? <label className="studio-check"><input name="removeImage" type="checkbox" /> Remove current cover</label> : <span />}
           <label className="studio-switch full"><input name="featured" type="checkbox" defaultChecked={Boolean(post.featured)} /><span /><div><strong>Featured article</strong><small>Use this article as the blog lead.</small></div></label>

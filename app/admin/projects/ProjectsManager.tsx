@@ -131,8 +131,8 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
       const imageUrl = await uploadAdminFile(file);
       updateBlock(block.id, { imageUrl: imageUrl || '', alt: block.alt || file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ') });
       setStatus('Screenshot added. Add its heading, details, and alt text.');
-    } catch {
-      setStatus('Could not upload this screenshot. Use a PNG, JPEG, or WebP under 8 MB.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not upload this screenshot. Use a PNG, JPEG, WebP, or AVIF file under 8 MB.');
     } finally {
       setUploadingBlock(null);
     }
@@ -259,7 +259,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
               {block.type === 'image' ? <div className="studio-image-block">
                 <div className={`studio-image-preview${block.imageUrl ? ' has-image' : ''}`}>{block.imageUrl ? <Image src={block.imageUrl} alt="" fill sizes="(max-width: 1180px) 100vw, 420px" unoptimized={block.imageUrl.startsWith('/api/media/')} /> : <><ImagePlus /><span>No screenshot uploaded</span></>}</div>
                 <div className="studio-image-fields">
-                  <label className="studio-block-upload"><span>{uploadingBlock === block.id ? 'Uploading…' : block.imageUrl ? 'Replace screenshot' : 'Upload screenshot'}</span><input type="file" accept="image/png,image/jpeg,image/webp" disabled={Boolean(uploadingBlock)} onChange={(event) => uploadBlockImage(block, event)} /><UploadCloud /></label>
+                  <label className="studio-block-upload"><span>{uploadingBlock === block.id ? 'Uploading…' : block.imageUrl ? 'Replace screenshot' : 'Upload screenshot'}</span><input type="file" accept="image/png,image/jpeg,image/webp,image/avif,.png,.jpg,.jpeg,.webp,.avif" disabled={Boolean(uploadingBlock)} onChange={(event) => uploadBlockImage(block, event)} /><UploadCloud /></label>
                   <label htmlFor={`project-image-heading-${block.id}`}>Screenshot heading <small>Optional</small><input id={`project-image-heading-${block.id}`} value={block.imageHeading || ''} onChange={(event) => updateBlock(block.id, { imageHeading: event.target.value })} placeholder="What should viewers notice?" /></label>
                   <label htmlFor={`project-image-description-${block.id}`}>Details <small>Optional</small><textarea id={`project-image-description-${block.id}`} rows={3} value={block.imageDescription || ''} onChange={(event) => updateBlock(block.id, { imageDescription: event.target.value })} placeholder="Explain the workflow or decision shown here." /></label>
                   <label htmlFor={`project-image-alt-${block.id}`}>Alt text <small>Required</small><input id={`project-image-alt-${block.id}`} required value={block.alt || ''} onChange={(event) => updateBlock(block.id, { alt: event.target.value })} placeholder="Describe the screenshot for screen readers" /></label>
@@ -284,7 +284,7 @@ export default function ProjectsManager({ projects }: { projects: Project[] }) {
 
         <section id="project-publishing" className="studio-form-grid studio-post-settings studio-workflow-section">
           <div className="studio-workflow-heading full"><small>Step 4</small><h3>Media and publishing</h3><p>Review the public destination, main visual, visibility, and homepage priority before saving.</p></div>
-          <label className="full studio-file-field"><span>Main project screenshot</span><input name="image" type="file" accept="image/png,image/jpeg,image/webp" /><small>Optional cover-style screenshot shown near the top of the project page.</small></label>
+          <label className="full studio-file-field"><span>Main project screenshot</span><input name="image" type="file" accept="image/png,image/jpeg,image/webp,image/avif,.png,.jpg,.jpeg,.webp,.avif" /><small>Optional PNG, JPEG, WebP, or AVIF image up to 8 MB.</small></label>
           {project.imageUrl ? <label className="studio-check full"><input name="removeImage" type="checkbox" /> Remove current main screenshot</label> : null}
           <label className="studio-switch full"><input name="featured" type="checkbox" defaultChecked={Boolean(project.featured)} /><span /><div><strong>Feature on homepage</strong><small>Give this project priority in the public portfolio.</small></div></label>
           <label className="studio-switch full"><input name="showOnProjects" type="checkbox" defaultChecked={Boolean(project.showOnProjects)} /><span /><div><strong>Show on Projects page</strong><small>Display this card in the public project collection.</small></div></label>

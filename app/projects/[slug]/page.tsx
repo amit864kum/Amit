@@ -37,6 +37,15 @@ function isGitHubUrl(value: string | null) {
   catch { return false; }
 }
 
+function normalizedCopy(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function distinctCopy(value: string, existing: string[]) {
+  const normalized = normalizedCopy(value);
+  return normalized && !existing.some((item) => normalizedCopy(item) === normalized) ? value : '';
+}
+
 export default async function ProjectPage({ params }: Props) {
   const slug = decodePathSegment((await params).slug);
   const [project, projects] = await Promise.all([getProject(slug), getProjects()]);
@@ -54,9 +63,20 @@ export default async function ProjectPage({ params }: Props) {
   const githubUrl = project.githubUrl || (isGitHubUrl(project.projectUrl) ? project.projectUrl : null);
   const liveUrl = project.projectUrl && !isGitHubUrl(project.projectUrl) ? project.projectUrl : null;
   const monogram = project.title.split(/\s+/).slice(0, 2).map((word) => word[0]).join('').toUpperCase();
+  const caseNumber = String(position + 1).padStart(2, '0');
+  const caseTotal = String(Math.max(caseStudies.length, 1)).padStart(2, '0');
   const details = projectDetails(project.detailJson, project);
-  const systemSteps = details.systemSteps.filter((step) => step.label || step.title || step.description);
-  const principles = details.principles.filter((principle) => principle.title || principle.description);
+  const repeatedCopy = [project.summary, project.body, ...paragraphs];
+  const contextDescription = distinctCopy(details.contextDescription, repeatedCopy);
+  const designIntent = distinctCopy(details.designIntent, repeatedCopy);
+  const systemSteps = details.systemSteps
+    .map((step) => ({ ...step, description: distinctCopy(step.description, repeatedCopy) }))
+    .filter((step) => step.label || step.title || step.description);
+  const principles = details.principles
+    .map((principle) => ({ ...principle, description: distinctCopy(principle.description, repeatedCopy) }))
+    .filter((principle) => principle.title || principle.description);
+  const hasSystemSection = Boolean(details.systemHeading || details.systemAccent || details.systemDescription || systemSteps.length || principles.length);
+  const hasProjectCta = Boolean(details.ctaHeading || details.ctaAccent);
 
   return <main className={`inner-page project-case-page${project.imageUrl ? ' has-project-media' : ' project-case-text-only'}`}>
     <StructuredData data={{
@@ -84,10 +104,15 @@ export default async function ProjectPage({ params }: Props) {
             {githubUrl ? <a className="project-case-secondary" href={githubUrl} target="_blank" rel="noreferrer"><Code2 aria-hidden="true" /> View source</a> : null}
           </div> : null}
         </div>
-        <aside className="project-case-hero-visual" aria-label={`${project.title} project overview`}>
-          <header><span>AK / Project system</span><b>{project.year}</b></header>
-          <div className="project-case-hero-mark" aria-hidden="true"><i /><i /><span>{monogram}</span></div>
-          <footer><p>Built across</p><ul>{tech.slice(0, 4).map((item) => <li key={item}>{item}</li>)}</ul></footer>
+        <aside className="project-case-hero-visual" aria-label={`${project.title} project brief`}>
+          <header><span>Project brief</span><b>{caseNumber} / {caseTotal}</b></header>
+          <div className="project-case-brief">
+            <div><span>Discipline</span><strong>{project.category}</strong></div>
+            <div><span>Year</span><strong>{project.year}</strong></div>
+            <div><span>Technology</span><strong>{tech.length ? `${String(tech.length).padStart(2, '0')} tools` : 'Focused stack'}</strong></div>
+          </div>
+          {tech.length ? <footer><p>Core stack</p><ul>{tech.slice(0, 6).map((item) => <li key={item}>{item}</li>)}</ul></footer> : null}
+          <span className="project-case-brief-mark" aria-hidden="true">{monogram}</span>
         </aside>
       </div>
     </section>
@@ -98,8 +123,8 @@ export default async function ProjectPage({ params }: Props) {
     </section> : null}
 
     <section className="project-case-story" id="project-story">
-      <aside><span>01 / Context</span>{details.contextHeading || details.contextAccent ? <h2>{details.contextHeading}{details.contextHeading && details.contextAccent ? <br /> : null}{details.contextAccent ? <em>{details.contextAccent}</em> : null}</h2> : null}{details.contextDescription ? <p>{details.contextDescription}</p> : null}</aside>
-      <article><p className="project-case-lead">{project.summary}</p><div className="project-case-prose">{paragraphs.map((paragraph, index) => <p key={`${project.id}-${index}`}>{paragraph}</p>)}</div>{details.designIntent ? <blockquote><span>Design intent</span><p>{details.designIntent}</p></blockquote> : null}</article>
+      <aside><span>01 / Context</span>{details.contextHeading || details.contextAccent ? <h2>{details.contextHeading}{details.contextHeading && details.contextAccent ? <br /> : null}{details.contextAccent ? <em>{details.contextAccent}</em> : null}</h2> : null}{contextDescription ? <p>{contextDescription}</p> : null}</aside>
+      <article><div className="project-case-prose">{paragraphs.map((paragraph, index) => <p key={`${project.id}-${index}`}>{paragraph}</p>)}</div>{designIntent ? <blockquote><span>Design intent</span><p>{designIntent}</p></blockquote> : null}</article>
     </section>
 
     {contentSections.length ? <section className="project-case-walkthrough" aria-labelledby={details.walkthroughHeading || details.walkthroughAccent ? 'walkthrough-title' : undefined} aria-label={details.walkthroughHeading || details.walkthroughAccent ? undefined : 'Project walkthrough'}>
@@ -114,7 +139,7 @@ export default async function ProjectPage({ params }: Props) {
       </article>)}</div>
     </section> : null}
 
-    <section className="project-case-system" aria-labelledby={details.systemHeading || details.systemAccent ? 'system-title' : undefined} aria-label={details.systemHeading || details.systemAccent ? undefined : 'Project system'}>
+    {hasSystemSection ? <section className="project-case-system" aria-labelledby={details.systemHeading || details.systemAccent ? 'system-title' : undefined} aria-label={details.systemHeading || details.systemAccent ? undefined : 'Project system'}>
       <header className="project-system-heading">
         <div className="project-system-kicker"><span>{contentSections.length ? '03' : '02'}</span><b>System</b></div>
         <div>{details.systemHeading || details.systemAccent ? <h2 id="system-title">{details.systemHeading}{details.systemHeading && details.systemAccent ? <br /> : null}{details.systemAccent ? <em>{details.systemAccent}</em> : null}</h2> : null}</div>
@@ -138,12 +163,12 @@ export default async function ProjectPage({ params }: Props) {
           <div>{principles.map((principle, index) => <section key={`${principle.title}-${index}`}><div><span>{String(index + 1).padStart(2, '0')}</span><i aria-hidden="true" /></div>{principle.title ? <h3>{principle.title}</h3> : null}{principle.description ? <p>{principle.description}</p> : null}</section>)}</div>
         </article> : null}
       </div>
-    </section>
+    </section> : null}
 
-    <section className="project-case-close">
-      {details.ctaHeading || details.ctaAccent ? <div className="project-case-contact">{details.ctaEyebrow ? <span>{details.ctaEyebrow}</span> : null}<h2>{details.ctaHeading}{details.ctaHeading && details.ctaAccent ? <br /> : null}{details.ctaAccent ? <em>{details.ctaAccent}</em> : null}</h2><MagneticLink href="/contact" className="project-case-primary">Start a conversation <ArrowUpRight aria-hidden="true" /></MagneticLink></div> : null}
+    {(hasProjectCta || (nextProject && nextProject.id !== project.id)) ? <section className={`project-case-close${hasProjectCta ? '' : ' is-single'}`}>
+      {hasProjectCta ? <div className="project-case-contact">{details.ctaEyebrow ? <span>{details.ctaEyebrow}</span> : null}<h2>{details.ctaHeading}{details.ctaHeading && details.ctaAccent ? <br /> : null}{details.ctaAccent ? <em>{details.ctaAccent}</em> : null}</h2><MagneticLink href="/contact" className="project-case-primary">Start a conversation <ArrowUpRight aria-hidden="true" /></MagneticLink></div> : null}
       {nextProject && nextProject.id !== project.id ? <Link className="project-case-next" href={`/projects/${toProjectSlug(nextProject.slug || nextProject.title)}`}><span>Next case study <b>{String(position + 2 > caseStudies.length ? 1 : position + 2).padStart(2, '0')}</b></span><div><p>{nextProject.category} · {nextProject.year}</p><h2>{nextProject.title}</h2></div><ArrowUpRight aria-hidden="true" /></Link> : null}
-    </section>
+    </section> : null}
     <SiteFooter />
   </main>;
 }

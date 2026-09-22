@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const saved = (await cookies()).get('admin-theme')?.value;
-  const theme = saved === 'light' ? 'light' : 'dark';
+  const theme = saved === 'dark' ? 'dark' : 'light';
   return <div className="admin-theme" data-admin-theme={theme}>
     <AdminThemeToggle initialTheme={theme} />
     {children}
